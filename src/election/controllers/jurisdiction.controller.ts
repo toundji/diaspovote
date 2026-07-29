@@ -8,13 +8,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
-import { JurisdictionService } from '../services/jurisdiction.service';
 import { Roles } from 'src/core/decorators/api.decorator';
 import { UserRole } from 'src/shared/common.enum';
-import { JurisdictionType } from 'src/shared/election.enum';
 import {
-    CreateJurisdictionDto, UpdateJurisdictionDto, ListJurisdictionsQuery,
+    CreateJurisdictionDto, UpdateJurisdictionDto, type ListJurisdictionsQuery,
 } from '../dto/jurisdiction.dto';
+import { JurisdictionType } from '../entities/election.enum';
+import { JurisdictionService } from '../services/jurisdiction.service';
 
 @ApiTags('Jurisdictions')
 @ApiBearerAuth()

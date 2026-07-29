@@ -14,12 +14,17 @@ import { Vote } from './entities/vote.entity';
 import { ElectionService } from './services/election.service';
 import { Condition } from './entities/condition.entity';
 import { ElectionController } from './controllers/election.controller';
+import { Election } from './entities/election.entity';
+import { ElectoralRollController } from './controllers/electoral-roll.controller';
+import { JurisdictionController } from './controllers/jurisdiction.controller';
+import { ElectoralRollService } from './services/electoral-roll.service';
+import { JurisdictionService } from './services/jurisdiction.service';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([
             Jurisdiction,
-            Selection,
+            Election,
             Condition,
             ElectoralRoll,
             Vote,
@@ -27,12 +32,18 @@ import { ElectionController } from './controllers/election.controller';
     ],
     controllers: [
         ElectionController,
+        JurisdictionController,
+        ElectoralRollController,
     ],
     providers: [
         ElectionService,
+        JurisdictionService,
+        ElectoralRollService,
     ],
     exports: [
         ElectionService,
+        JurisdictionService,
+        ElectoralRollService,
     ],
 })
 export class ElectionsModule { }

@@ -3,7 +3,7 @@
 // DTOs des routes /jurisdictions/*.
 // ============================================================
 import { IsString, IsOptional, IsEnum, IsUUID, IsNotEmpty } from 'class-validator';
-import { JurisdictionType } from 'src/shared/election.enum';
+import { JurisdictionType } from '../entities/election.enum';
 
 export class CreateJurisdictionDto {
     @IsString()

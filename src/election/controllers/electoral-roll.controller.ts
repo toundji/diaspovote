@@ -9,10 +9,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
-import { ElectoralRollService } from '../services/electoral-roll.service';
 import { Roles } from 'src/core/decorators/api.decorator';
 import { UserRole } from 'src/shared/common.enum';
 import { RegisterVoterDto, BulkRegisterDto } from '../dto/electoral-roll.dto';
+import { ElectoralRollService } from '../services/electoral-roll.service';
 
 @ApiTags('Electoral Roll')
 @ApiBearerAuth()

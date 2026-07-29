@@ -8,7 +8,7 @@ import { Repository, FindOptionsWhere } from 'typeorm';
 
 import { Jurisdiction } from '../entities/jurisdiction.entity';
 import { Election } from '../entities/election.entity';
-import { JurisdictionType } from 'src/shared/election.enum';
+import { JurisdictionType } from '../entities/election.enum';
 import {
     CreateJurisdictionDto, UpdateJurisdictionDto, ListJurisdictionsQuery,
 } from '../dto/jurisdiction.dto';

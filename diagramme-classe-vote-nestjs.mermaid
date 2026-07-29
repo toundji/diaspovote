@@ -1,0 +1,265 @@
+classDiagram
+    direction TB
+
+    %% ============================================================
+    %%  Ordre de déclaration pensé pour la lisibilité :
+    %%  chaque enum est placé juste après l'entité qui l'utilise,
+    %%  et les entités suivent le flux métier (identité -> election
+    %%  -> candidature -> vote -> réalisations). Les entités étendent
+    %%  toutes Audit (id uuid, timestamps, soft-delete) : héritage
+    %%  omis du diagramme car trivial.
+    %% ============================================================
+
+    %% ── 1. IDENTITÉ (template) ────────────────────────────────
+    class User {
+        <<template + extension projet>>
+        +string firstName
+        +string lastName
+        +string email
+        +string phone
+        +string jurisdictionId
+        +string profile
+        +string password
+        +string googleId
+        +UserStatus status
+        +UserRole[] roles
+        +string code
+        +string name
+    }
+    class UserRole {
+        <<enumeration>>
+        voter
+        candidate
+        admin
+        commission
+    }
+    class UserStatus {
+        <<enumeration>>
+        active
+        unverified
+        disabled
+        blocked
+        deleted
+    }
+
+    class UserDevice {
+        <<template>>
+        +string userId
+        +string deviceFingerprint
+        +string deviceName
+        +DeviceType deviceType
+        +string os
+        +string browser
+        +string fcmToken
+        +Date lastActiveAt
+    }
+    class DeviceType {
+        <<enumeration>>
+        mobile
+        desktop
+        tablet
+        unknown
+    }
+
+    class UserSession {
+        <<template>>
+        +string userId
+        +string deviceFingerprint
+        +string refreshTokenHash
+        +Date expiresAt
+        +Date lastActiveAt
+        +string ip
+    }
+
+    %% ── 2. PÉRIMÈTRE GÉOGRAPHIQUE (domaine) ───────────────────
+    class Jurisdiction {
+        <<domaine>>
+        +string name
+        +JurisdictionType type
+        +string parentId
+    }
+    class JurisdictionType {
+        <<enumeration>>
+        federation
+        state
+    }
+
+    %% ── 3. ÉLECTION & ÉLIGIBILITÉ (domaine) ───────────────────
+    class Election {
+        <<domaine>>
+        +string jurisdictionId
+        +number year
+        +string title
+        +string description
+        +ElectionStatus status
+        +Date startsAt
+        +Date endsAt
+        +bool resultsPublished
+    }
+    class ElectionStatus {
+        <<enumeration>>
+        draft
+        active
+        closed
+    }
+
+    class ElectoralRoll {
+        <<domaine>>
+        +string userId
+        +string electionId
+        +Date registeredAt
+    }
+
+    class Condition {
+        <<domaine>>
+        +string electionId
+        +ConditionType type
+        +string title
+        +string description
+        +bool isMandatory
+        +bool isActive
+        +number position
+    }
+    class ConditionType {
+        <<enumeration>>
+        candidate
+        voter
+        campaign
+    }
+
+    %% ── 3. CANDIDATURE (domaine) ──────────────────────────────
+    class Candidacy {
+        <<domaine>>
+        +string userId
+        +string electionId
+        +string position
+        +string photoUrl
+        +string reviewedById
+        +Date approvedAt
+        +Date rejectedAt
+    }
+
+    class CandidacyProgram {
+        <<domaine>>
+        +string candidacyId
+        +string content
+    }
+
+    class CampaignPost {
+        <<domaine>>
+        +string candidacyId
+        +string title
+        +string content
+        +string mediaUrl
+        +Date publishedAt
+    }
+
+    %% ── 4. VOTE (domaine) ─────────────────────────────────────
+    class Vote {
+        <<domaine>>
+        +string electionId
+        +string candidacyId
+        +string userId
+        +string receiptCode
+    }
+
+    %% ── 5. RÉALISATIONS VÉRIFIÉES (domaine, sans score) ───────
+    class ActionCategory {
+        <<domaine>>
+        +string label
+        +bool isActive
+    }
+
+    class Achievement {
+        <<domaine>>
+        +string candidacyId
+        +string categoryId
+        +string title
+        +string description
+        +string proofUrl
+        +string proofSnapshot
+        +string reviewedById
+        +Date approvedAt
+        +Date rejectedAt
+    }
+
+    class Contestation {
+        <<domaine>>
+        +string achievementId
+        +string reporterId
+        +string reason
+        +string resolvedById
+        +Date resolvedAt
+    }
+
+    %% ── 6. ÉCHANGES & AUDIT (domaine) ─────────────────────────
+    class Question {
+        <<domaine>>
+        +string candidacyId
+        +string authorId
+        +string content
+        +string answer
+        +Date answeredAt
+        +Date hiddenAt
+    }
+
+    class AuditLog {
+        <<domaine>>
+        +string actorId
+        +string action
+        +string entityType
+        +string entityId
+        +string details
+    }
+
+    %% ============================================================
+    %%  RELATIONS  (groupées par cluster, dans l'ordre ci-dessus)
+    %% ============================================================
+
+    %% Identité
+    User "1" --> "0..*" UserDevice : owns
+    User "1" --> "0..*" UserSession : owns
+    UserDevice "1" --> "0..*" UserSession : runs
+    User ..> UserStatus
+    User ..> UserRole
+    UserDevice ..> DeviceType
+
+    %% Élection & éligibilité
+    Jurisdiction "1" --> "0..*" Jurisdiction : parent_of
+    Jurisdiction "1" --> "0..*" Election : scopes
+    Jurisdiction "1" --> "0..*" User : resides_in
+    Jurisdiction ..> JurisdictionType
+    User "1" --> "0..*" ElectoralRoll : registered_on
+    Election "1" --> "0..*" ElectoralRoll : eligible_voters
+    Election "1" --> "0..*" Condition : defines
+    Election ..> ElectionStatus
+    Condition ..> ConditionType
+
+    %% Candidature
+    User "1" --> "0..*" Candidacy : runs_as
+    Election "1" --> "0..*" Candidacy : contested_in
+    Candidacy "1" --> "0..1" CandidacyProgram : has
+    Candidacy "1" --> "0..*" CampaignPost : publishes
+
+    %% Vote
+    Election "1" --> "0..*" Vote : collects
+    Candidacy "1" --> "0..*" Vote : receives
+    User "1" --> "0..*" Vote : casts
+
+    %% Réalisations
+    Candidacy "1" --> "0..*" Achievement : publishes
+    ActionCategory "1" --> "0..*" Achievement : classifies
+    Achievement "1" --> "0..*" Contestation : disputed_by
+    User "1" --> "0..*" Achievement : reviews
+    User "1" --> "0..*" Contestation : resolves
+
+    %% Échanges & audit
+    Candidacy "1" --> "0..*" Question : receives
+    User "1" --> "0..*" Question : asks
+    User "1" --> "0..*" AuditLog : acts
+
+    %% ============================================================
+    note for User "roles = colonne SET (multi-rôles) du template.\nOTP par email/Redis (pas d'entité). phone ajouté par le projet."
+    note for Vote "UNIQUE(userId, electionId). createdAt (Audit) = date du vote."
+    note for ElectoralRoll "UNIQUE(userId, electionId) - eligibilite par annee."
+    note for Election "UNIQUE(year, jurisdictionId) - une election par perimetre et par annee.\ntaux = votes(election) / roll(election)."

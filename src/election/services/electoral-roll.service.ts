@@ -10,7 +10,7 @@ import { In, Repository } from 'typeorm';
 import { ElectoralRoll } from '../entities/electoral-roll.entity';
 import { Election } from '../entities/election.entity';
 import { Vote } from '../entities/vote.entity';
-import { ElectionStatus } from 'src/shared/election.enum';
+import { ElectionStatus, JurisdictionType } from '../entities/election.enum';
 import { BulkRegisterResult, RollStats } from '../dto/electoral-roll.dto';
 import { ApiError, ApiErrorNotFoundById } from 'src/utils/api-error';
 
