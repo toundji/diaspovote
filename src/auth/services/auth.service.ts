@@ -382,7 +382,7 @@ export class AuthService {
     }
 
     private getAccessTtl(user: User): string {
-        const isAdmin = [UserRole.admin, UserRole.manager, UserRole.engineer]
+        const isAdmin = [UserRole.admin, UserRole.admin, UserRole.engineer]
             .some(r => user.roles?.includes(r));
         return isAdmin
             ? (process.env.JWT_TOKEN_EXPIRES_IN_ADMIN ?? '8h')
@@ -397,7 +397,7 @@ export class AuthService {
     }
 
     private async assertClientAccess(user: User, clientType?: ApiClientType): Promise<void> {
-        const adminRoles = [UserRole.admin, UserRole.manager, UserRole.engineer];
+        const adminRoles = [UserRole.admin, UserRole.admin, UserRole.engineer];
 
         if (clientType === ApiClientType.back_office) {
             if (!adminRoles.some(r => user.roles?.includes(r))) {
