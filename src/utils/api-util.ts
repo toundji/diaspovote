@@ -11,8 +11,7 @@
 import * as crypto from 'crypto';
 import 'dotenv/config';
 import { compareSync, hashSync } from 'bcrypt';
-import { ApiClientType, DeviceType, TokenType } from '../shared/common.enum';
-import { User } from '../auth/entities/user.entity';
+import { ApiClientType, DeviceType, TokenType, UserRole } from '../shared/common.enum';
 
 // ── Constantes ───────────────────────────────────────────────
 
@@ -98,6 +97,13 @@ export interface JwtPayload {
     dfp: string; // deviceFingerprint — abrégé pour minimiser la taille du token
 }
 
+/** Sous-ensemble structurel de User requis pour signer un JWT. utils/ ne dépend que de shared/. */
+export interface JwtPayloadUser {
+    id: string;
+    email?: string;
+    roles?: UserRole[];
+}
+
 /**
  * Payload JWT minimal.
  * - sub   : userId (standard RFC 7519)
@@ -107,7 +113,7 @@ export interface JwtPayload {
  * - jti   : pour révocation au logout via Redis
  * - dfp   : deviceFingerprint — pour cibler la session au logout
  */
-export function apiGeneratePayLoad(user: User, type: TokenType, deviceFingerprint: string): JwtPayload {
+export function apiGeneratePayLoad(user: JwtPayloadUser, type: TokenType, deviceFingerprint: string): JwtPayload {
     return {
         sub: user.id,
         email: user.email ?? '',
@@ -208,7 +214,6 @@ export function getApiClientType(apiKey: string): ApiClientType | null {
     const map: Record<string, ApiClientType> = {
         [process.env.API_KEY_MOBILE ?? '_']: ApiClientType.mobile,
         [process.env.API_KEY_IOS ?? '_']: ApiClientType.ios,
-        [process.env.API_KEY_MANAGER ?? '_']: ApiClientType.manager,
         [process.env.API_KEY_WEB_APP ?? '_']: ApiClientType.web_app,
         [process.env.API_KEY_LANDING ?? '_']: ApiClientType.landing,
         [process.env.API_KEY_WEB ?? '_']: ApiClientType.web,

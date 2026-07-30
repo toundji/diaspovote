@@ -10,9 +10,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
-import { User } from '../auth/entities/user.entity';
 import {
-    MAIL_QUEUE, MailJobType,
+    MAIL_QUEUE, MailJobType, MailRecipient,
     ConfirmEmailJob, ResetPasswordJob,
     ResetPinJob, ResetLinkJob,
 } from './mail.types';
@@ -26,7 +25,7 @@ export class MailService {
 
     // ── Confirmation email ────────────────────────────────────
 
-    async sendUserConfirmation(user: User, otp: string): Promise<void> {
+    async sendUserConfirmation(user: MailRecipient, otp: string): Promise<void> {
         const job: ConfirmEmailJob = {
             type: MailJobType.CONFIRM_EMAIL,
             to: user.email!,
@@ -44,7 +43,7 @@ export class MailService {
 
     // ── Reset password (OTP) ──────────────────────────────────
 
-    async sendResetPasswordCode(user: User, otp: string): Promise<void> {
+    async sendResetPasswordCode(user: MailRecipient, otp: string): Promise<void> {
         const job: ResetPasswordJob = {
             type: MailJobType.RESET_PASSWORD,
             to: user.email!,
@@ -62,7 +61,7 @@ export class MailService {
 
     // ── Reset password (lien — web uniquement) ────────────────
 
-    async sendResetPasswordLink(user: User, resetUrl: string): Promise<void> {
+    async sendResetPasswordLink(user: MailRecipient, resetUrl: string): Promise<void> {
         const job: ResetLinkJob = {
             type: MailJobType.RESET_LINK,
             to: user.email!,
@@ -80,7 +79,7 @@ export class MailService {
 
     // ── Reset PIN (mobile) ────────────────────────────────────
 
-    async sendResetPinCode(user: User, otp: string): Promise<void> {
+    async sendResetPinCode(user: MailRecipient, otp: string): Promise<void> {
         const job: ResetPinJob = {
             type: MailJobType.RESET_PIN,
             to: user.email!,

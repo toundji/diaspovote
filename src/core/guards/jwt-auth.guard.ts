@@ -99,8 +99,8 @@ export class RequireRoleGuard implements CanActivate {
         const { user } = context.switchToHttp().getRequest();
         if (!user) return false;
 
-        // Engineer bypass
-        if ((user.roles as string[]).includes(UserRole.engineer)) return true;
+        // Admin bypass
+        if ((user.roles as string[]).includes(UserRole.admin)) return true;
 
         const hasRole = requiredRoles.some(r => (user.roles as string[]).includes(r));
         if (!hasRole) {

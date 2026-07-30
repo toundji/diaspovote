@@ -3,6 +3,16 @@
 // Interfaces des jobs email pour BullMQ.
 // ============================================================
 
+/**
+ * Sous-ensemble structurel de User utilisé par MailService.
+ * mail/ ne dépend d'aucun autre module métier (shared, utils uniquement) :
+ * on type sur la forme requise plutôt que d'importer l'entité User.
+ */
+export interface MailRecipient {
+    email?: string;
+    firstName?: string;
+}
+
 export enum MailJobType {
     CONFIRM_EMAIL = 'confirm-email',
     RESET_PASSWORD = 'reset-password',

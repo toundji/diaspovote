@@ -22,7 +22,7 @@ export class MailController {
      * Liste les emails échoués, filtrable par status.
      */
     @Get('failed')
-    @Roles(UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin, UserRole.commission)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Lister les emails échoués' })
     @ApiQuery({ name: 'status', required: false, enum: MailFailedStatus })
@@ -35,7 +35,7 @@ export class MailController {
      * Remet un email échoué dans la queue pour une nouvelle tentative.
      */
     @Post('failed/:id/retry')
-    @Roles(UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin, UserRole.commission)
     @HttpCode(HttpStatus.OK)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Relancer un email échoué' })
@@ -48,7 +48,7 @@ export class MailController {
      * Marque un email échoué comme abandonné (pas de suppression DB).
      */
     @Delete('failed/:id')
-    @Roles(UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin, UserRole.commission)
     @HttpCode(HttpStatus.OK)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Abandonner un email échoué" })

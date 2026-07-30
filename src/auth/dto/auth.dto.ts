@@ -12,7 +12,7 @@ import {
     MinLength, Length, Matches, IsUUID, IsArray,
 } from 'class-validator';
 import { ApiClientType } from '../../shared/common.enum';
-import { User } from '../entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 // ── Inscription / Login ───────────────────────────────────────
 

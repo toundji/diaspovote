@@ -10,11 +10,11 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 
-import { User } from '../entities/user.entity';
-import { SessionService } from './session.service';
-import { OtpService } from './otp.service';
+import { User } from '../../users/entities/user.entity';
+import { SessionService } from '../../users/services/session.service';
+import { OtpService } from '../../users/services/otp.service';
 import { NotificationService } from './notification.service';
-import { PasswordService } from './password.service';
+import { PasswordService } from '../../users/services/password.service';
 
 import {
     apiComparePasswords, apiGeneratePayLoad,
@@ -34,7 +34,7 @@ import {
     UserRole, UserStatus,
 } from '../../shared/common.enum';
 import { AuthResponse, LoginDto, LoginPinDto, RegisterDto, UserAuditInfo, GoogleAuthDto } from '../dto/auth.dto';
-import { UserService } from './user.service';
+import { UserService } from '../../users/services/user.service';
 
 
 
@@ -382,7 +382,7 @@ export class AuthService {
     }
 
     private getAccessTtl(user: User): string {
-        const isAdmin = [UserRole.admin, UserRole.admin, UserRole.engineer]
+        const isAdmin = [UserRole.admin, UserRole.commission]
             .some(r => user.roles?.includes(r));
         return isAdmin
             ? (process.env.JWT_TOKEN_EXPIRES_IN_ADMIN ?? '8h')
@@ -397,19 +397,11 @@ export class AuthService {
     }
 
     private async assertClientAccess(user: User, clientType?: ApiClientType): Promise<void> {
-        const adminRoles = [UserRole.admin, UserRole.admin, UserRole.engineer];
+        const adminRoles = [UserRole.admin, UserRole.commission];
 
         if (clientType === ApiClientType.back_office) {
             if (!adminRoles.some(r => user.roles?.includes(r))) {
                 throw new ApiError('Access denied. Admin access required.', {
-                    code: HttpStatus.FORBIDDEN,
-                });
-            }
-        }
-
-        if (clientType === ApiClientType.manager) {
-            if (!user.roles?.includes(UserRole.agent)) {
-                throw new ApiError('Access denied. Agent access required.', {
                     code: HttpStatus.FORBIDDEN,
                 });
             }

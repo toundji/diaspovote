@@ -75,7 +75,7 @@ export class UserController {
      * Accessible : admin, manager, engineer.
      */
     @Get()
-    @Roles(UserRole.admin, UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin, UserRole.commission)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Lister tous les utilisateurs (paginé + filtres)' })
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Numéro de page (défaut: 1)' })
@@ -95,7 +95,7 @@ export class UserController {
      * Accessible : admin, manager, engineer.
      */
     @Get(':id')
-    @Roles(UserRole.admin, UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin, UserRole.commission)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Récupérer un utilisateur par id' })
     getUser(@Param('id') id: string) {
@@ -110,7 +110,7 @@ export class UserController {
      * Bloquer ou supprimer révoque immédiatement toutes ses sessions.
      */
     @Patch(':id/status')
-    @Roles(UserRole.admin, UserRole.admin)
+    @Roles(UserRole.admin)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Changer le statut d'un utilisateur" })
     updateStatus(
@@ -149,7 +149,7 @@ export class UserController {
      * que NestJS interprète "admin" comme un id.
      */
     @Patch('admin/reset-password')
-    @Roles(UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin, UserRole.commission)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Réinitialiser le mot de passe d'un utilisateur" })
     adminResetPassword(@Body() body: AdminResetPasswordDto) {

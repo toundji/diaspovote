@@ -172,9 +172,6 @@ export class PasswordService {
      * Stockage Argon2id (irréversible) :
      *   - Même si la DB est compromise → PIN illisible
      *   - 64MB par tentative → bruteforce économiquement impossible
-     *
-     * Le champ pinCode (TEXT, nullable) doit exister sur l'entité User
-     * du projet mobile (extension de l'entité de base).
      */
     async setupPin(userId: string, pinCode: string): Promise<{ success: boolean }> {
         this.assertPinFormat(pinCode);
@@ -184,7 +181,7 @@ export class PasswordService {
         await this.userRepo
             .createQueryBuilder()
             .update()
-            .set({ pinCode: hash } as any)
+            .set({ pinCode: hash })
             .where('id = :id', { id: userId })
             .execute();
 
@@ -203,7 +200,7 @@ export class PasswordService {
             .createQueryBuilder('u')
             .select(['u.id', 'u.pinCode'])
             .where('u.id = :id', { id: userId })
-            .getOne() as any;
+            .getOne();
 
         if (!user?.pinCode) throw new ApiError('PIN not configured.');
 
@@ -227,7 +224,7 @@ export class PasswordService {
             .createQueryBuilder('u')
             .select(['u.id', 'u.pinCode'])
             .where('u.id = :id', { id: userId })
-            .getOne() as any;
+            .getOne();
 
         return { configured: !!user?.pinCode };
     }
@@ -247,7 +244,7 @@ export class PasswordService {
         await this.userRepo
             .createQueryBuilder()
             .update()
-            .set({ pinCode: null } as any)
+            .set({ pinCode: null })
             .where('id = :id', { id: userId })
             .execute();
 

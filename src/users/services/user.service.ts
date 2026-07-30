@@ -10,8 +10,8 @@ import { Repository, FindManyOptions, ILike, FindOptionsWhere, IsNull, Not } fro
 import { User } from '../entities/user.entity';
 import { ApiError, ApiErrorDb, ApiErrorNotFoundById } from '../../utils/api-error';
 import { UpdateProfileDto, ListUsersQuery, PaginatedUsers } from '../dto/user.dto';
-import { PasswordService } from 'src/auth/services/password.service';
-import { SessionService } from 'src/auth/services/session.service';
+import { PasswordService } from './password.service';
+import { SessionService } from './session.service';
 import { UserStatus, UserRole, FileStatus } from 'src/shared/common.enum';
 import { ImageDto } from 'src/shared/media.dto';
 import { ApiFsUtils } from 'src/utils/api-fs';
@@ -83,7 +83,7 @@ export class UserService {
             profile: profile.picture,
             googleId: profile.googleId,
             status: UserStatus.active,   // emailVerified côté Google → pas besoin de confirmation
-            roles: [UserRole.user],
+            roles: [UserRole.voter],
         });
 
         return this.userRepo.save(user);
