@@ -175,10 +175,14 @@ périmètre géographique → élection/éligibilité → candidature → vote �
 
 - ✅ Identité (`users/`), périmètre géographique (`Jurisdiction`), élection/éligibilité
   (`Election`, `ElectoralRoll`) — entités + service + controller.
+- ✅ Candidature (`Candidacy`, `CandidacyProgram`, `CampaignPost`) — entités + service +
+  controller (`/candidacies`). État dérivé de `approvedAt`/`rejectedAt` (pas de colonne
+  status), même convention que `Achievement`. Lecture publique (portail vitrine), écriture
+  réservée au propriétaire, revue (`approve`/`reject`) réservée à `commission`/`admin`
+  **depuis le back-office** (`@RequireClientType(back_office)`).
 - ⏳ `Condition` et `Vote` : entités enregistrées dans `ElectionsModule` mais **sans**
-  service/controller dédié pour l'instant (`Vote.candidacyId` dépend de `Candidacy`, à
-  construire avant).
-- ⏳ Candidature (`Candidacy`, `CandidacyProgram`, `CampaignPost`) : pas encore commencée.
+  service/controller dédié pour l'instant. `Vote.candidacyId` peut maintenant être validé
+  contre `Candidacy` (existante + approuvée) — prochain bloc logique.
 - ⏳ Réalisations vérifiées (`ActionCategory`, `Achievement`, `Contestation`) : pas commencée.
 - ⏳ Échanges & audit (`Question`, `AuditLog`) : pas commencée (l'audit `createdBy`/`updatedBy`
   générique existe déjà via `core/interceptors/api-audit.ts` — `AuditLog` du diagramme est un
