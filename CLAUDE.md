@@ -29,7 +29,7 @@ l'invariant le plus important du projet :
 ```
 shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
                                             ↑
-                                       election/ (domaine métier DiaspoVote)
+                                { election/, oversight/ }  (domaine métier DiaspoVote)
 ```
 
 | Dossier      | Rôle                                                                 | Dépend de        |
@@ -41,7 +41,8 @@ shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
 | `users/`     | Agrégat utilisateur : `User`, `UserDevice`, `UserSession`, `UserService`, `SessionService`, `PasswordService`, `OtpService`, `UserController` | shared, core, utils, mail |
 | `auth/`      | **Flux** d'authentification : `AuthService`, `AuthController`, `NotificationService` (FCM) | users (+ ci-dessus) |
 | `mail/`      | Mail asynchrone BullMQ + relance                                     | shared, utils    |
-| `election/`  | Domaine métier DiaspoVote : `Jurisdiction`, `Election`, `Condition`, `ElectoralRoll`, `Vote`, (à venir) `Candidacy`, `Achievement`... Référence les autres entités par id simple (colonne, pas de relation TypeORM) — jamais d'import croisé d'entité entre `election/` et `users/`. | shared, database, core, utils |
+| `election/`  | Processus électoral DiaspoVote : `Jurisdiction`, `Election`, `Condition`, `ElectoralRoll`, `Vote`, `Candidacy`, `CandidacyProgram`, `CampaignPost`. Référence les autres entités par id simple (colonne, pas de relation TypeORM) — jamais d'import croisé d'entité avec `users/`. | shared, database, core, utils |
+| `oversight/` | Suivi post-élection DiaspoVote (à construire) : `ActionCategory`, `Achievement`, `Contestation`, `Question`, `AuditLog`. Redevabilité des élus envers les électeurs — fonctionne en continu, pas seulement pendant la fenêtre électorale. Même règle : id simple vers `users/`/`election/`, jamais de relation TypeORM croisée. | shared, database, core, utils |
 
 Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 (`UserRole`, `UserStatus`, `ApiClientType`, `TokenType`, `DeviceType`, `AbilityEnum`,
@@ -59,9 +60,10 @@ Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 - **`mail/` et `utils/` ne dépendent d'aucune entité métier.** Un service qui a juste besoin
   de `{ email, firstName }` type sur une interface structurelle locale (ex. `MailRecipient`
   dans `mail.types.ts`, `JwtPayloadUser` dans `api-util.ts`) plutôt que d'importer `User`.
-- **`election/` (et tout futur module domaine) référence `users/` uniquement par id** (colonne
-  `userId` simple, pas de `@ManyToOne`/import de l'entité `User`) — évite un couplage
-  bidirectionnel entre modules métier et le socle auth/users.
+- **`election/` et `oversight/` référencent `users/` (et entre eux) uniquement par id** (colonne
+  `userId`/`electionId`/`candidacyId`... simple, pas de `@ManyToOne`/import d'entité) — évite un
+  couplage bidirectionnel entre modules métier et le socle auth/users, et entre modules métier
+  eux-mêmes.
 - **Un seul système de hash** : Argon2id via `PasswordService`. Ne jamais réintroduire de
   `bcrypt` / `hashSync` libre dans les utils.
 - **Un fichier = une responsabilité.** Pas de fichier util fourre-tout. Le filesystem va dans
@@ -170,11 +172,17 @@ existantes. `User` porte désormais aussi `phone`, `jurisdictionId` et `pinCode`
 ## Domaine métier — état d'avancement
 
 Suivre `diagramme-classe-vote-nestjs.mermaid` pour l'ordre des clusters : identité →
-périmètre géographique → élection/éligibilité → candidature → vote → réalisations vérifiées
-→ échanges/audit.
+périmètre géographique → élection/éligibilité → candidature → vote (→ `election/`)
+→ réalisations vérifiées → échanges/audit (→ `oversight/`).
 
-- ✅ Identité (`users/`), périmètre géographique (`Jurisdiction`), élection/éligibilité
-  (`Election`, `ElectoralRoll`) — entités + service + controller.
+`election/` = faire tourner le processus électoral. `oversight/` = redevabilité des élus
+après élection (fonctionne en continu, indépendamment du cycle électoral) — module distinct
+décidé pour séparer ces deux préoccupations.
+
+### `election/`
+
+- ✅ Périmètre géographique (`Jurisdiction`), élection/éligibilité (`Election`,
+  `ElectoralRoll`) — entités + service + controller.
 - ✅ Candidature (`Candidacy`, `CandidacyProgram`, `CampaignPost`) — entités + service +
   controller (`/candidacies`). État dérivé de `approvedAt`/`rejectedAt` (pas de colonne
   status), même convention que `Achievement`. Lecture publique (portail vitrine), écriture
@@ -183,7 +191,10 @@ périmètre géographique → élection/éligibilité → candidature → vote �
 - ⏳ `Condition` et `Vote` : entités enregistrées dans `ElectionsModule` mais **sans**
   service/controller dédié pour l'instant. `Vote.candidacyId` peut maintenant être validé
   contre `Candidacy` (existante + approuvée) — prochain bloc logique.
+
+### `oversight/` (module à créer)
+
 - ⏳ Réalisations vérifiées (`ActionCategory`, `Achievement`, `Contestation`) : pas commencée.
 - ⏳ Échanges & audit (`Question`, `AuditLog`) : pas commencée (l'audit `createdBy`/`updatedBy`
-  générique existe déjà via `core/interceptors/api-audit.ts` — `AuditLog` du diagramme est un
+  générique existe déjà via `core/interceptors/api-audit.ts` — `AuditLog` du diagramme est une
   entité métier distincte, à ne pas confondre).
