@@ -29,7 +29,7 @@ l'invariant le plus important du projet :
 ```
 shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
                                             ↑
-                                { election/, oversight/ }  (domaine métier DiaspoVote)
+                                       election/  ←  oversight/
 ```
 
 | Dossier      | Rôle                                                                 | Dépend de        |
@@ -41,8 +41,8 @@ shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
 | `users/`     | Agrégat utilisateur : `User`, `UserDevice`, `UserSession`, `UserService`, `SessionService`, `PasswordService`, `OtpService`, `UserController` | shared, core, utils, mail |
 | `auth/`      | **Flux** d'authentification : `AuthService`, `AuthController`, `NotificationService` (FCM) | users (+ ci-dessus) |
 | `mail/`      | Mail asynchrone BullMQ + relance                                     | shared, utils    |
-| `election/`  | Processus électoral DiaspoVote : `Jurisdiction`, `Election`, `Condition`, `ElectoralRoll`, `Vote`, `Candidacy`, `CandidacyProgram`, `CampaignPost`. Référence les autres entités par id simple (colonne, pas de relation TypeORM) — jamais d'import croisé d'entité avec `users/`. | shared, database, core, utils |
-| `oversight/` | Suivi post-élection DiaspoVote (à construire) : `ActionCategory`, `Achievement`, `Contestation`, `Question`, `AuditLog`. Redevabilité des élus envers les électeurs — fonctionne en continu, pas seulement pendant la fenêtre électorale. Même règle : id simple vers `users/`/`election/`, jamais de relation TypeORM croisée. | shared, database, core, utils |
+| `election/`  | Processus électoral DiaspoVote : `Jurisdiction`, `Election`, `Condition`, `ElectoralRoll`, `Vote`, `Candidacy`, `CandidacyProgram`, `CampaignPost`. Référence `users/` par id simple (colonne, pas de relation TypeORM) — jamais d'import croisé d'entité. | shared, database, core, utils |
+| `oversight/` | Suivi post-élection DiaspoVote : `ActionCategory`, `Achievement`, `Contestation`, `Question`, `AuditLog`. Redevabilité des élus envers les électeurs — fonctionne en continu, pas seulement pendant la fenêtre électorale. Importe `ElectionsModule` pour sa **seule API publique** (`CandidacyService`, ex: vérifier le propriétaire d'une candidature) — aucune relation TypeORM/import d'entité vers `election/` ou `users/`, uniquement des colonnes id (`candidacyId`, `categoryId`, `achievementId`...). | shared, database, core, utils, **election/** |
 
 Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 (`UserRole`, `UserStatus`, `ApiClientType`, `TokenType`, `DeviceType`, `AbilityEnum`,
@@ -63,7 +63,10 @@ Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 - **`election/` et `oversight/` référencent `users/` (et entre eux) uniquement par id** (colonne
   `userId`/`electionId`/`candidacyId`... simple, pas de `@ManyToOne`/import d'entité) — évite un
   couplage bidirectionnel entre modules métier et le socle auth/users, et entre modules métier
-  eux-mêmes.
+  eux-mêmes. `oversight/` → `election/` est autorisé **au niveau service** (`oversight/` importe
+  `ElectionsModule` et injecte `CandidacyService` pour vérifier la propriété d'une candidature),
+  c'est le même principe que `auth/` → `users/` : dépendance à sens unique via l'API publique
+  exportée d'un module, jamais via une relation TypeORM ou un import d'entité.
 - **Un seul système de hash** : Argon2id via `PasswordService`. Ne jamais réintroduire de
   `bcrypt` / `hashSync` libre dans les utils.
 - **Un fichier = une responsabilité.** Pas de fichier util fourre-tout. Le filesystem va dans
@@ -197,9 +200,22 @@ décidé pour séparer ces deux préoccupations.
   publics une fois `resultsPublished`, aperçu admin/commission avant). `ElectionService.activate()`
   exige désormais ≥ 2 candidatures approuvées et une liste électorale non vide.
 
-### `oversight/` (module à créer)
+### `oversight/`
 
-- ⏳ Réalisations vérifiées (`ActionCategory`, `Achievement`, `Contestation`) : pas commencée.
-- ⏳ Échanges & audit (`Question`, `AuditLog`) : pas commencée (l'audit `createdBy`/`updatedBy`
-  générique existe déjà via `core/interceptors/api-audit.ts` — `AuditLog` du diagramme est une
-  entité métier distincte, à ne pas confondre).
+- ✅ `ActionCategory` — donnée de référence (`/action-categories`), lecture publique, écriture admin.
+- ✅ `Achievement` — `/candidacies/:candidacyId/achievements`. Même convention que `Candidacy`
+  (état dérivé de `approvedAt`/`rejectedAt`). Publication réservée aux candidats **approuvés**
+  (vérifié via `CandidacyService.getById`), catégorie doit être active. Revue (`approve`/`reject`)
+  réservée à commission/admin depuis le back-office ; tracée dans `AuditLog`.
+- ✅ `Contestation` — `/achievements/:achievementId/contestations`. Un citoyen conteste
+  uniquement une réalisation **approuvée**. Lecture/résolution réservées à commission/admin
+  (pas de portail public) ; résolution tracée dans `AuditLog`. La décision sur l'`Achievement`
+  contesté (ex: le rejeter) passe par `AchievementService`, pas par `Contestation` elle-même.
+- ✅ `Question` — `/candidacies/:candidacyId/questions`. Tout utilisateur authentifié pose une
+  question ; le candidat propriétaire répond ; modération (`hide`) réservée à commission/admin
+  (tracée dans `AuditLog`). Liste publique des questions non masquées ; le candidat/admin/
+  commission voient aussi les masquées.
+- ✅ `AuditLog` — écrit uniquement via `AuditLogService.record()` (appelé par `Achievement`/
+  `Contestation`/`Question` après une action de modération). Lecture (`GET /audit-log`) réservée
+  à commission/admin depuis le back-office — entité métier distincte de l'audit technique
+  `createdBy`/`updatedBy` (`core/interceptors/api-audit.ts`), à ne pas confondre.

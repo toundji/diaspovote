@@ -19,6 +19,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ElectionsModule } from './election/elections.module';
+import { OversightModule } from './oversight/oversight.module';
 import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 
 
@@ -101,6 +102,7 @@ import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
     AuthModule,
     UsersModule,
     ElectionsModule,
+    OversightModule,
   ],
   controllers: [AppController],
   providers: [AppService,
