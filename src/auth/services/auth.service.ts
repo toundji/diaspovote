@@ -34,9 +34,16 @@ import {
     UserRole, UserStatus,
 } from '../../shared/common.enum';
 import { AuthResponse, LoginDto, LoginPinDto, RegisterDto, UserAuditInfo, GoogleAuthDto } from '../dto/auth.dto';
-import { UserService } from '../../users/services/user.service';
 
+// ── Types internes ────────────────────────────────────────────
 
+interface GoogleProfile {
+    googleId: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    picture?: string;
+}
 
 // ── Service ───────────────────────────────────────────────────
 
@@ -51,7 +58,6 @@ export class AuthService {
         private readonly otpService: OtpService,
         private readonly notificationService: NotificationService,
         private readonly passwordService: PasswordService,
-        private readonly userService: UserService,
     ) { }
 
     // ── INSCRIPTION ────────────────────────────────────────────
@@ -313,7 +319,7 @@ export class AuthService {
         }
 
         // 2. Trouver ou créer l'utilisateur
-        const user = await this.userService.findOrCreateGoogleUser({
+        const user = await this.findOrCreateGoogleUser({
             googleId: decoded.uid,
             email: decoded.email,
             firstName: decoded.name?.split(' ')[0],
@@ -335,6 +341,49 @@ export class AuthService {
     }
 
     // ── Privé ──────────────────────────────────────────────────
+
+    /**
+     * Trouve ou crée un utilisateur depuis un profil Google Firebase.
+     *
+     * Cas 1 — googleId connu → login direct
+     * Cas 2 — email connu mais pas de googleId → lier le compte existant
+     * Cas 3 — compte inconnu → créer un nouveau compte (emailVerified, pas de password)
+     *
+     * Vit dans AuthService (pas UserService) : c'est la seule méthode de gestion
+     * de compte requise par le flux d'authentification Google — inutile d'injecter
+     * tout UserService (et ses dépendances SessionService/PasswordService) pour ça.
+     */
+    private async findOrCreateGoogleUser(profile: GoogleProfile): Promise<User> {
+        // Cas 1 — compte déjà lié à ce googleId
+        const byGoogleId = await this.userRepo.findOne({
+            where: { googleId: profile.googleId },
+        });
+        if (byGoogleId) return byGoogleId;
+
+        // Cas 2 — email existant → lier le googleId
+        if (profile.email) {
+            const byEmail = await this.userRepo.findOne({
+                where: { email: profile.email },
+            });
+            if (byEmail) {
+                await this.userRepo.update(byEmail.id, { googleId: profile.googleId });
+                return this.userRepo.findOne({ where: { id: byEmail.id } }) as Promise<User>;
+            }
+        }
+
+        // Cas 3 — nouveau compte
+        const user = this.userRepo.create({
+            email: profile.email,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            profile: profile.picture,
+            googleId: profile.googleId,
+            status: UserStatus.active,   // emailVerified côté Google → pas besoin de confirmation
+            roles: [UserRole.voter],
+        });
+
+        return this.userRepo.save(user);
+    }
 
     private async buildAuthResponse(
         user: User,
