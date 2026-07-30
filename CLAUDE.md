@@ -188,9 +188,14 @@ décidé pour séparer ces deux préoccupations.
   status), même convention que `Achievement`. Lecture publique (portail vitrine), écriture
   réservée au propriétaire, revue (`approve`/`reject`) réservée à `commission`/`admin`
   **depuis le back-office** (`@RequireClientType(back_office)`).
-- ⏳ `Condition` et `Vote` : entités enregistrées dans `ElectionsModule` mais **sans**
-  service/controller dédié pour l'instant. `Vote.candidacyId` peut maintenant être validé
-  contre `Candidacy` (existante + approuvée) — prochain bloc logique.
+- ✅ `Condition` — CRUD par élection (`/elections/:electionId/conditions`), lecture publique,
+  écriture admin.
+- ✅ `Vote` — `/votes` : cast (vérifie élection active + fenêtre startsAt/endsAt, inscription
+  sur la liste électorale via `ElectoralRollService.isRegistered`, candidature approuvée et
+  rattachée à la même élection, unicité `userId`/`electionId`), vérification de reçu publique
+  (`GET /votes/receipt/:receiptCode`), résultats agrégés (`GET /votes/results/:electionId`,
+  publics une fois `resultsPublished`, aperçu admin/commission avant). `ElectionService.activate()`
+  exige désormais ≥ 2 candidatures approuvées et une liste électorale non vide.
 
 ### `oversight/` (module à créer)
 

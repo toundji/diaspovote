@@ -6,20 +6,27 @@
 // ============================================================
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, Not, IsNull } from 'typeorm';
 
 import { Election } from '../entities/election.entity';
 import { Jurisdiction } from '../entities/jurisdiction.entity';
+import { Candidacy } from '../entities/candidacy.entity';
+import { ElectoralRoll } from '../entities/electoral-roll.entity';
 
 import { ApiError, ApiErrorNotFoundById } from 'src/utils/api-error';
 import { CreateElectionDto, ListElectionsQuery, PaginatedElections, UpdateElectionDto } from '../dto/election.dto';
 import { ElectionStatus } from '../entities/election.enum';
+
+/** Nombre minimum de candidatures approuvées pour ouvrir un scrutin. */
+const MIN_APPROVED_CANDIDACIES = 2;
 
 @Injectable()
 export class ElectionService {
     constructor(
         @InjectRepository(Election) private readonly electionRepo: Repository<Election>,
         @InjectRepository(Jurisdiction) private readonly jurisdictionRepo: Repository<Jurisdiction>,
+        @InjectRepository(Candidacy) private readonly candidacyRepo: Repository<Candidacy>,
+        @InjectRepository(ElectoralRoll) private readonly rollRepo: Repository<ElectoralRoll>,
     ) { }
 
     // ── Création ──────────────────────────────────────────────
@@ -111,8 +118,20 @@ export class ElectionService {
             throw new ApiError('Définissez la fenêtre de vote (startsAt / endsAt) avant activation.');
         }
         this.assertWindow(election.startsAt, election.endsAt);
-        // NB (bloc suivant) : vérifier ici qu'il y a >= 2 candidatures approuvées
-        // et que la liste électorale n'est pas vide, une fois ces modules branchés.
+
+        const approvedCandidacies = await this.candidacyRepo.count({
+            where: { electionId: id, approvedAt: Not(IsNull()) },
+        });
+        if (approvedCandidacies < MIN_APPROVED_CANDIDACIES) {
+            throw new ApiError(
+                `Au moins ${MIN_APPROVED_CANDIDACIES} candidatures approuvées sont requises avant activation (actuellement ${approvedCandidacies}).`,
+            );
+        }
+
+        const rollSize = await this.rollRepo.count({ where: { electionId: id } });
+        if (rollSize === 0) {
+            throw new ApiError('La liste électorale est vide — inscrivez au moins un électeur avant activation.');
+        }
 
         election.status = ElectionStatus.active;
         return this.electionRepo.save(election);

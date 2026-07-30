@@ -1,8 +1,8 @@
 // ============================================================
 // elections.module.ts
-// Module du cœur électoral.
-// Condition et Vote sont enregistrées (TypeOrm) mais n'ont pas encore
-// de service/controller dédié — à ajouter dans un prochain bloc.
+// Module du cœur électoral (processus électoral DiaspoVote).
+// Le suivi post-élection (Achievement, Contestation, Question, AuditLog)
+// vit dans un module séparé : oversight/ (à créer).
 // ============================================================
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -20,6 +20,8 @@ import { ElectionController } from './controllers/election.controller';
 import { ElectoralRollController } from './controllers/electoral-roll.controller';
 import { JurisdictionController } from './controllers/jurisdiction.controller';
 import { CandidacyController } from './controllers/candidacy.controller';
+import { ConditionController } from './controllers/condition.controller';
+import { VoteController } from './controllers/vote.controller';
 
 import { ElectionService } from './services/election.service';
 import { ElectoralRollService } from './services/electoral-roll.service';
@@ -27,6 +29,8 @@ import { JurisdictionService } from './services/jurisdiction.service';
 import { CandidacyService } from './services/candidacy.service';
 import { CandidacyProgramService } from './services/candidacy-program.service';
 import { CampaignPostService } from './services/campaign-post.service';
+import { ConditionService } from './services/condition.service';
+import { VoteService } from './services/vote.service';
 
 @Module({
     imports: [
@@ -46,6 +50,8 @@ import { CampaignPostService } from './services/campaign-post.service';
         JurisdictionController,
         ElectoralRollController,
         CandidacyController,
+        ConditionController,
+        VoteController,
     ],
     providers: [
         ElectionService,
@@ -54,6 +60,8 @@ import { CampaignPostService } from './services/campaign-post.service';
         CandidacyService,
         CandidacyProgramService,
         CampaignPostService,
+        ConditionService,
+        VoteService,
     ],
     exports: [
         ElectionService,
@@ -62,6 +70,8 @@ import { CampaignPostService } from './services/campaign-post.service';
         CandidacyService,
         CandidacyProgramService,
         CampaignPostService,
+        ConditionService,
+        VoteService,
     ],
 })
 export class ElectionsModule { }
