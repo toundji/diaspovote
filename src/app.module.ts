@@ -8,7 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
-import { ApiKeyGuard, RequireAuthGuard, RequireUserStatusGuard, RequireRoleGuard } from './core/guards/jwt-auth.guard';
+import { ApiKeyGuard, RequireClientTypeGuard, RequireAuthGuard, RequireUserStatusGuard, RequireRoleGuard } from './core/guards/jwt-auth.guard';
 import { ApiDeserializationMiddleware } from './core/middleware/api-middleware';
 import { UserAuditInterceptor, UserAuditSubscriber } from './core/interceptors/api-audit';
 import { ApiErrorFilter } from './core/filters/api-error-filter';
@@ -107,6 +107,7 @@ import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 
     // ── Guards globaux (ordre important) ─────────────────
     { provide: APP_GUARD, useClass: ApiKeyGuard },
+    { provide: APP_GUARD, useClass: RequireClientTypeGuard },
     { provide: APP_GUARD, useClass: RequireAuthGuard },
     { provide: APP_GUARD, useClass: RequireUserStatusGuard },
     { provide: APP_GUARD, useClass: RequireRoleGuard },

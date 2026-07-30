@@ -1,9 +1,14 @@
 # CLAUDE.md
 
-Contexte pour les assistants IA travaillant sur ce template (ou un projet qui en dérive).
-NestJS universel : un seul backend pour mobile (Flutter) **et** web. Couvre JWT double-token,
-sessions multi-équipements, PIN (Argon2id), OTP, Google Firebase Auth, notifications FCM,
-mail asynchrone (BullMQ) avec relance.
+Contexte pour les assistants IA travaillant sur **DiaspoVote** (webservices NestJS).
+Le socle auth/users/mail est un template universel (JWT double-token, sessions
+multi-équipements, PIN Argon2id, OTP, Google Firebase Auth, notifications FCM, mail
+asynchrone BullMQ avec relance). Le domaine métier (élections, candidatures, votes,
+réalisations) est spécifique à DiaspoVote et suit le diagramme de classe
+`diagramme-classe-vote-nestjs.mermaid` à la racine du repo — **source de vérité** pour
+les entités du domaine, leurs champs et leurs relations. Toute nouvelle entité/relation
+doit d'abord être vérifiée contre ce diagramme (et le diagramme mis à jour si une
+décision le fait évoluer).
 
 ## Commandes
 
@@ -23,6 +28,8 @@ l'invariant le plus important du projet :
 
 ```
 shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
+                                            ↑
+                                       election/ (domaine métier DiaspoVote)
 ```
 
 | Dossier      | Rôle                                                                 | Dépend de        |
@@ -31,9 +38,10 @@ shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
 | `database/`  | Config ORM (`base_orm_config.ts`)                                    | shared           |
 | `core/`      | Infra Nest : guards, middleware, interceptors, filters, decorators   | shared, database |
 | `utils/`     | Helpers sans état : `api-util`, `api-error`, `api-fs`, `redis.config`, `swagger-config` | shared |
-| `users/`     | Agrégat utilisateur : `User`, `UserService`, `UserController`, `user.dto` + sessions & credentials | shared, core, utils, mail |
-| `auth/`      | **Flux** d'authentification : `AuthService`, `AuthController`, `OtpService`, `NotificationService` | users (+ ci-dessus) |
+| `users/`     | Agrégat utilisateur : `User`, `UserDevice`, `UserSession`, `UserService`, `SessionService`, `PasswordService`, `OtpService`, `UserController` | shared, core, utils, mail |
+| `auth/`      | **Flux** d'authentification : `AuthService`, `AuthController`, `NotificationService` (FCM) | users (+ ci-dessus) |
 | `mail/`      | Mail asynchrone BullMQ + relance                                     | shared, utils    |
+| `election/`  | Domaine métier DiaspoVote : `Jurisdiction`, `Election`, `Condition`, `ElectoralRoll`, `Vote`, (à venir) `Candidacy`, `Achievement`... Référence les autres entités par id simple (colonne, pas de relation TypeORM) — jamais d'import croisé d'entité entre `election/` et `users/`. | shared, database, core, utils |
 
 Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 (`UserRole`, `UserStatus`, `ApiClientType`, `TokenType`, `DeviceType`, `AbilityEnum`,
@@ -46,7 +54,14 @@ Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
   `mail/` tire un symbole de `auth/entities/`, c'est un bug d'architecture.
 - **`auth → users` uniquement, jamais l'inverse.** `auth/` orchestre l'authentification
   contre l'agrégat `users/`. `users/` ignore l'existence de `auth/`. Aucun cycle de modules,
-  aucun `forwardRef()`.
+  aucun `forwardRef()`. `PasswordService`/`SessionService`/`OtpService` vivent dans `users/`
+  (pas dans `auth/`) précisément pour éviter le cycle `users → auth → users`.
+- **`mail/` et `utils/` ne dépendent d'aucune entité métier.** Un service qui a juste besoin
+  de `{ email, firstName }` type sur une interface structurelle locale (ex. `MailRecipient`
+  dans `mail.types.ts`, `JwtPayloadUser` dans `api-util.ts`) plutôt que d'importer `User`.
+- **`election/` (et tout futur module domaine) référence `users/` uniquement par id** (colonne
+  `userId` simple, pas de `@ManyToOne`/import de l'entité `User`) — évite un couplage
+  bidirectionnel entre modules métier et le socle auth/users.
 - **Un seul système de hash** : Argon2id via `PasswordService`. Ne jamais réintroduire de
   `bcrypt` / `hashSync` libre dans les utils.
 - **Un fichier = une responsabilité.** Pas de fichier util fourre-tout. Le filesystem va dans
@@ -95,12 +110,29 @@ Convention `customCode` : `1xxx` = Auth, `2xxx` = User, `3xxx` = Métier (défin
 
 ```
 Requête → ApiDeserializationMiddleware  (vérifie JWT sans DB → req.user + dfp,
-                                          valide clé API, parse UA → req.userDevice, IP)
-   → ApiKeyGuard          (req.apikey.valid)
-   → RequireAuthGuard     (req.user + jti non blacklisté dans Redis)
-   → RequireRoleGuard     (req.user.roles)
-   → RequireUserStatusGuard (req.user.status)
+                                          valide clé API → req.apikey.{valid,type}, parse UA → req.userDevice, IP)
+   → ApiKeyGuard              (req.apikey.valid)
+   → RequireClientTypeGuard   (req.apikey.type ∈ @RequireClientType(...) si présent sur la route)
+   → RequireAuthGuard         (req.user + jti non blacklisté dans Redis)
+   → RequireRoleGuard         (req.user.roles)
+   → RequireUserStatusGuard   (req.user.status)
 ```
+
+### `ApiClientType` — identifier la source de l'appel
+
+`ApiClientType` (mobile, ios, web, web_app, landing, website, **back_office**, swagger) est
+déterminé par la clé API envoyée (`getApiClientType()` dans `api-util.ts`), **indépendamment**
+du JWT/rôle de l'utilisateur. Deux mécanismes distincts et cumulables :
+
+- `@Roles(...)` + `RequireRoleGuard` → **qui** appelle (rôle du compte connecté).
+- `@RequireClientType(...)` + `RequireClientTypeGuard` (`core/decorators/api.decorator.ts`,
+  `core/guards/jwt-auth.guard.ts`) → **depuis où** l'appel arrive (quelle clé API/app cliente).
+
+Utile pour verrouiller les routes d'administration à la clé API back-office même si un
+JWT admin valide était utilisé ailleurs (défense en profondeur) : voir
+`mail/mail.controller.ts` (niveau controller) et les routes admin de
+`users/controllers/user.controller.ts` (niveau route, car ce controller mélange routes
+`/me` ouvertes à tout client et routes admin réservées au back-office).
 
 ### Redis (rate-limiting & révocation)
 
@@ -121,20 +153,33 @@ le vérifie via Admin SDK (find-or-create ; compte Google → `status: active`, 
 FCM pour les notifs mobile. Si `FIREBASE_SDK` absent → service désactivé proprement
 (`initialized = false`), pas de crash.
 
-## État de migration — à finaliser
+## Migration users/auth — terminée
 
-Le template est **à mi-refonte** (extraction de `User` hors de `auth/`). Étapes restantes :
+L'extraction de `User` hors de `auth/` (section précédente de ce fichier) est **faite** :
+doublons supprimés, `UsersModule` câblé (`TypeOrmModule.forFeature([User, UserDevice,
+UserSession])`, exporte `TypeOrmModule` + `UserService`/`SessionService`/`PasswordService`/
+`OtpService`), `AuthModule` réduit à `AuthService`/`AuthController`/`NotificationService` et
+importe `UsersModule`. La décision du point 5 (ancien) a été tranchée : `SessionService`,
+`PasswordService`, `OtpService`, `UserDevice`, `UserSession` vivent dans `users/` —
+dépendance strictement `auth → users`, aucun `forwardRef()`.
 
-1. **Supprimer les doublons `User` dans `auth/`** : `auth/entities/user.entity.ts`,
-   `auth/services/user.service.ts`, `auth/controllers/user.controller.ts`, `auth/dto/user.dto.ts`.
-   `users/` fait foi.
-2. **Supprimer `users/entities/audit.ts`** (doublon) — `shared/audit.ts` fait foi.
-3. **Câbler `UsersModule`** (actuellement `@Module({})` vide) : déclarer `User` (TypeOrm
-   forFeature), `UserService`, `UserController` ; **exporter `UserService`**.
-4. **`AuthModule`** : importer `UsersModule`, retirer de son propre wiring `User` /
-   `UserController` / `UserService`.
-5. **Décision à confirmer** — placement de `SessionService` + `PasswordService` +
-   entités `UserDevice`/`UserSession`. Recommandation : les déplacer dans `users/` (ils
-   font partie de l'agrégat utilisateur), ce qui rend la dépendance strictement `auth → users`
-   et **élimine le cycle**. Alternative : les laisser dans `auth/` et accepter un
-   `forwardRef()` entre les deux modules (déconseillé).
+`UserRole.user` a été renommé `UserRole.voter` pour suivre le diagramme de classe
+(`voter | candidate | admin | commission`) — migration TypeORM dédiée pour les données
+existantes. `User` porte désormais aussi `phone`, `jurisdictionId` et `pinCode` (diagramme).
+
+## Domaine métier — état d'avancement
+
+Suivre `diagramme-classe-vote-nestjs.mermaid` pour l'ordre des clusters : identité →
+périmètre géographique → élection/éligibilité → candidature → vote → réalisations vérifiées
+→ échanges/audit.
+
+- ✅ Identité (`users/`), périmètre géographique (`Jurisdiction`), élection/éligibilité
+  (`Election`, `ElectoralRoll`) — entités + service + controller.
+- ⏳ `Condition` et `Vote` : entités enregistrées dans `ElectionsModule` mais **sans**
+  service/controller dédié pour l'instant (`Vote.candidacyId` dépend de `Candidacy`, à
+  construire avant).
+- ⏳ Candidature (`Candidacy`, `CandidacyProgram`, `CampaignPost`) : pas encore commencée.
+- ⏳ Réalisations vérifiées (`ActionCategory`, `Achievement`, `Contestation`) : pas commencée.
+- ⏳ Échanges & audit (`Question`, `AuditLog`) : pas commencée (l'audit `createdBy`/`updatedBy`
+  générique existe déjà via `core/interceptors/api-audit.ts` — `AuditLog` du diagramme est un
+  entité métier distincte, à ne pas confondre).

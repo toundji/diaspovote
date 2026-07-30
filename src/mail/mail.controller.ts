@@ -8,11 +8,12 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'
 
 import { MailFailedService } from './mail-failed.service';
 import { MailFailedStatus } from './entities/mail-failed.entity';
-import { Roles } from '../core/decorators/api.decorator';
-import { UserRole } from '../shared/common.enum';
+import { Roles, RequireClientType } from '../core/decorators/api.decorator';
+import { ApiClientType, UserRole } from '../shared/common.enum';
 
 @ApiTags('Mail')
 @Controller('mail')
+@RequireClientType(ApiClientType.back_office)
 export class MailController {
 
     constructor(private readonly mailFailedService: MailFailedService) { }

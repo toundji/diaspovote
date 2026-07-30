@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { ApiError, ApiErrorCustomCode } from '../../utils/api-error';
-import { UserRole, UserStatus } from '../../shared/common.enum';
+import { ApiClientType, UserRole, UserStatus } from '../../shared/common.enum';
 import { redisKeys } from '../../utils/redis.config';
 
 // ── RequireAuthGuard ──────────────────────────────────────────
@@ -188,6 +188,49 @@ export class ApiKeyGuard implements CanActivate {
                 code: HttpStatus.UNAUTHORIZED,
                 customCode: ApiErrorCustomCode.AUTH_API_KEY_INVALID,
                 detail: `API key "${req.apikey.token.slice(0, 8)}..." not recognized`,
+                level: 'warn',
+            });
+        }
+
+        return true;
+    }
+}
+
+// ── RequireClientTypeGuard ────────────────────────────────────
+/**
+ * Restreint une route aux clients dont la clé API correspond au(x)
+ * ApiClientType déclaré(s) via @RequireClientType(...). Sans le décorateur,
+ * la route reste accessible depuis n'importe quel client valide (ApiKeyGuard
+ * a déjà vérifié que la clé existe et est reconnue).
+ *
+ * Différence avec RequireRoleGuard : celui-ci vérifie le rôle du compte
+ * (JWT), celui-là vérifie l'origine de l'appel (clé API) — les deux sont
+ * indépendants et cumulables.
+ */
+@Injectable()
+export class RequireClientTypeGuard implements CanActivate {
+    constructor(private readonly reflector: Reflector) { }
+
+    canActivate(context: ExecutionContext): boolean {
+        const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+        if (isPublic) return true;
+
+        const allowedTypes = this.reflector.getAllAndMerge<ApiClientType[]>('clientTypes', [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+        if (!allowedTypes?.length) return true;
+
+        const req = context.switchToHttp().getRequest();
+        const clientType: ApiClientType | undefined = req.apikey?.type;
+
+        if (!clientType || !allowedTypes.includes(clientType)) {
+            throw new ApiError('Access denied from this client.', {
+                code: HttpStatus.FORBIDDEN,
+                detail: `clientType "${clientType}" not in [${allowedTypes.join(', ')}]`,
                 level: 'warn',
             });
         }
