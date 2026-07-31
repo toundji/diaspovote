@@ -3,6 +3,8 @@ import { AppModule } from './app.module';
 import { swagger_config } from './utils/swagger-config';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { errorMapper } from './utils/api-error';
+import basicAuth = require('express-basic-auth'); // ✅
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -30,10 +32,24 @@ async function bootstrap() {
     }),
   );
 
+
+  app.use(
+    ['/docs'],
+    basicAuth({
+      challenge: true,
+      users: {
+        [process.env.DOC_USER_NAME as string]: process.env.DOC_PASSWORD as string,
+      },
+    }),
+  );
+
   // ── Swagger ───────────────────────────────────────────────
-  if (process.env.NODE_ENV !== 'production') {
-    swagger_config(app);
-  }
+  // if (process.env.NODE_ENV !== 'production') {
+  //   swagger_config(app);
+  // }
+
+  swagger_config(app);
+
 
 
   const logger = new Logger('Bootstrap');
