@@ -29,7 +29,7 @@ export class AuthController {
     ) { }
 
     // ── Inscription ──────────────────────────────────────────
-
+    @Public()
     @Post('register')
     @ApiOperation({ summary: 'Inscription + envoi OTP confirmation' })
     register(@Body() body: RegisterDto, @AuditInfo() audit: any,) {
@@ -38,6 +38,7 @@ export class AuthController {
 
     // ── Login ─────────────────────────────────────────────────
 
+    @Public()
     @Post('login')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login email + password' })
