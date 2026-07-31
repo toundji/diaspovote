@@ -72,10 +72,10 @@ export class UserController {
     /**
      * GET /users
      * Liste paginée de tous les utilisateurs avec filtres optionnels.
-     * Accessible : admin, manager, engineer.
+     * Accessible : admin.
      */
     @Get()
-    @Roles(UserRole.admin, UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Lister tous les utilisateurs (paginé + filtres)' })
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Numéro de page (défaut: 1)' })
@@ -92,10 +92,10 @@ export class UserController {
     /**
      * GET /users/:id
      * Récupérer un utilisateur par son id.
-     * Accessible : admin, manager, engineer.
+     * Accessible : admin.
      */
     @Get(':id')
-    @Roles(UserRole.admin, UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Récupérer un utilisateur par id' })
     getUser(@Param('id') id: string) {
@@ -110,7 +110,7 @@ export class UserController {
      * Bloquer ou supprimer révoque immédiatement toutes ses sessions.
      */
     @Patch(':id/status')
-    @Roles(UserRole.admin, UserRole.admin)
+    @Roles(UserRole.admin)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Changer le statut d'un utilisateur" })
     updateStatus(
@@ -143,13 +143,13 @@ export class UserController {
     /**
      * PATCH /users/admin/reset-password
      * Réinitialiser le mot de passe d'un utilisateur.
-     * Accessible : admin, engineer.
+     * Accessible : admin.
      *
      * ⚠️  Cette route doit être déclarée AVANT `:id` pour éviter
      * que NestJS interprète "admin" comme un id.
      */
     @Patch('admin/reset-password')
-    @Roles(UserRole.admin, UserRole.engineer)
+    @Roles(UserRole.admin)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Réinitialiser le mot de passe d'un utilisateur" })
     adminResetPassword(@Body() body: AdminResetPasswordDto) {

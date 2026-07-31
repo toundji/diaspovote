@@ -6,11 +6,7 @@
 
 /**
  * Rôles applicatifs. Colonne MySQL de type SET → un utilisateur
- * peut cumuler plusieurs rôles (ex: [voter, commission]).
- *
- * ⚠️ Après ce changement, adapter les @Roles(...) du template :
- *    src/users/controllers/user.controller.ts référence encore
- *    manager / engineer → remplacer par admin / commission.
+ * peut cumuler plusieurs rôles (ex: [user, commission]).
  */
 export enum UserRole {
     user = 'user',
@@ -28,15 +24,7 @@ export enum UserStatus {
 }
 
 export enum ApiClientType {
-    // Mobile
-    mobile = 'mobile',
-    ios = 'ios',
-    // Web
     web = 'web',
-    web_app = 'web_app',
-    website = 'website',
-    landing = 'landing',
-    // Commun
     back_office = 'back_office',
     swagger = 'swagger',
 }

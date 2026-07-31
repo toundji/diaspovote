@@ -17,7 +17,7 @@ const _swagger_config = new DocumentBuilder()
         {
             type: 'apiKey',
             name: 'api-key',
-            description: 'Clé API client (mobile, web, back-office...)',
+            description: 'Clé API client (web, back-office, swagger)',
             in: 'header',
         },
         'apiKey',

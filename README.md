@@ -215,9 +215,9 @@ CRYPTO_KEY=64_caractères_hex
 
 # ── API Keys (par type de client) ────────────────────────────
 API_KEY_HEADER_NAME=x-api-key
-API_KEY_MOBILE=votre_cle_mobile
 API_KEY_WEB=votre_cle_web
-API_KEY_BACKOFFICE=votre_cle_backoffice
+API_KEY_BACK_OFFICE=votre_cle_back_office
+API_KEY_SWAGGER=votre_cle_swagger
 
 # ── Mail (SMTP) ───────────────────────────────────────────────
 MAIL_HOST=smtp.example.com
@@ -288,7 +288,6 @@ Pour les erreurs 500, un `errorId` est ajouté pour retrouver le log :
 | 1017 | `AUTH_TOO_MANY_ATTEMPTS` | Trop de tentatives |
 | 1018 | `AUTH_ACCESS_DENIED` | Rôle insuffisant |
 | 1019 | `AUTH_ADMIN_REQUIRED` | Réservé aux admins |
-| 1020 | `AUTH_AGENT_REQUIRED` | Réservé aux agents |
 | 2001 | `USER_NOT_FOUND` | Utilisateur introuvable |
 | 2002 | `USER_UPDATE_EMPTY` | Aucun champ valide à mettre à jour |
 | 3xxx | `BUSINESS_*` | **À définir selon le projet** |

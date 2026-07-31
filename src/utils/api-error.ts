@@ -44,8 +44,7 @@ export const ApiErrorCustomCode = {
     AUTH_TOO_MANY_ATTEMPTS: 1017,  // Trop de tentatives — compte temporairement verrouillé
 
     AUTH_ACCESS_DENIED: 1018,  // Rôle ou statut insuffisant
-    AUTH_ADMIN_REQUIRED: 1019,  // Accès réservé aux admins / managers / engineers
-    AUTH_AGENT_REQUIRED: 1020,  // Accès réservé aux agents
+    AUTH_ADMIN_REQUIRED: 1019,  // Accès réservé aux admins
 
     // ── User (2xxx) — universels, ne pas modifier ─────────────
 

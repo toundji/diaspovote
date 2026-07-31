@@ -382,8 +382,7 @@ export class AuthService {
     }
 
     private getAccessTtl(user: User): string {
-        const isAdmin = [UserRole.admin, UserRole.admin, UserRole.engineer]
-            .some(r => user.roles?.includes(r));
+        const isAdmin = user.roles?.includes(UserRole.admin);
         return isAdmin
             ? (process.env.JWT_TOKEN_EXPIRES_IN_ADMIN ?? '8h')
             : (process.env.JWT_TOKEN_EXPIRES_IN ?? '15m');
@@ -397,19 +396,11 @@ export class AuthService {
     }
 
     private async assertClientAccess(user: User, clientType?: ApiClientType): Promise<void> {
-        const adminRoles = [UserRole.admin, UserRole.admin, UserRole.engineer];
+        const backOfficeRoles = [UserRole.admin, UserRole.commission];
 
         if (clientType === ApiClientType.back_office) {
-            if (!adminRoles.some(r => user.roles?.includes(r))) {
-                throw new ApiError('Access denied. Admin access required.', {
-                    code: HttpStatus.FORBIDDEN,
-                });
-            }
-        }
-
-        if (clientType === ApiClientType.manager) {
-            if (!user.roles?.includes(UserRole.agent)) {
-                throw new ApiError('Access denied. Agent access required.', {
+            if (!backOfficeRoles.some(r => user.roles?.includes(r))) {
+                throw new ApiError('Access denied. Admin or commission access required.', {
                     code: HttpStatus.FORBIDDEN,
                 });
             }

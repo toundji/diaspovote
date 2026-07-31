@@ -233,8 +233,14 @@ Le template est **à mi-refonte** (extraction de `User` hors de `auth/`). Étape
 ### Adaptations projet à ne pas oublier
 
 - `UserRole` a été **remplacé** par les valeurs métier (`user`/`candidate`/`admin`/`commission`).
-  Les `@Roles(UserRole.manager | engineer | …)` hérités du template doivent être remplacés par
-  `admin` / `commission`.
+  Les `@Roles(UserRole.manager | engineer | …)` hérités du template ont été remplacés par
+  `admin` / `commission` (guards, controllers `users/` et `auth/`, `mail.controller.ts`,
+  `AuthService.assertClientAccess`).
+- `ApiClientType` a été **réduit** aux clients réels de diaspovote : `web` (portail votants/
+  candidats), `back_office` (admin + commission), `swagger` (doc/dev). Les valeurs héritées du
+  template paybuistra (`mobile`, `ios`, `web_app`, `website`, `landing`, `manager`) ont été
+  supprimées ; `getApiClientType()` (`utils/api-util.ts`) et le `.env.example` ne référencent
+  plus que `API_KEY_WEB` / `API_KEY_BACK_OFFICE` / `API_KEY_SWAGGER`.
 - Enregistrer `ElectionsModule` (puis `CandidatesModule`, `VotesModule`) dans les `imports` de
   `app.module.ts`.
 

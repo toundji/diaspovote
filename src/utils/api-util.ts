@@ -206,13 +206,7 @@ export function parseUserAgent(userAgent: string, userId: string): ParsedDevice 
 
 export function getApiClientType(apiKey: string): ApiClientType | null {
     const map: Record<string, ApiClientType> = {
-        [process.env.API_KEY_MOBILE ?? '_']: ApiClientType.mobile,
-        [process.env.API_KEY_IOS ?? '_']: ApiClientType.ios,
-        [process.env.API_KEY_MANAGER ?? '_']: ApiClientType.manager,
-        [process.env.API_KEY_WEB_APP ?? '_']: ApiClientType.web_app,
-        [process.env.API_KEY_LANDING ?? '_']: ApiClientType.landing,
         [process.env.API_KEY_WEB ?? '_']: ApiClientType.web,
-        [process.env.API_KEY_WEBSITE ?? '_']: ApiClientType.website,
         [process.env.API_KEY_BACK_OFFICE ?? '_']: ApiClientType.back_office,
         [process.env.API_KEY_SWAGGER ?? '_']: ApiClientType.swagger,
     };
@@ -222,7 +216,7 @@ export function getApiClientType(apiKey: string): ApiClientType | null {
 // ── Helpers ───────────────────────────────────────────────────
 
 export function isAdminRole(roles: string[]): boolean {
-    return ['admin', 'manager', 'engineer'].some(r => roles.includes(r));
+    return roles.includes('admin');
 }
 
 

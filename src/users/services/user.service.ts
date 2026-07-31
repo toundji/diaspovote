@@ -131,7 +131,7 @@ export class UserService {
 
     /**
      * Liste paginée avec filtres optionnels.
-     * Accessible uniquement aux rôles admin / manager / engineer.
+     * Accessible uniquement au rôle admin.
      */
     async listUsers(query: ListUsersQuery): Promise<PaginatedUsers> {
         const page = Math.max(1, query.page ?? 1);
