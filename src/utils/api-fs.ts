@@ -11,7 +11,7 @@ import {
     unlink as fsUnlink,
 } from 'fs';
 
-export const defaultAvatarUrl: string | undefined = process.env.default_image_proflie;
+export const defaultAvatarUrl: string | undefined = process.env.default_image_profile;
 
 export class ApiFsUtils {
 

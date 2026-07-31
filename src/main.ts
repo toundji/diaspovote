@@ -10,12 +10,12 @@ async function bootstrap() {
 
   // ── CORS ──────────────────────────────────────────────────
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? '*',
+    origin: process.env.CORS_ORIGIN?.split(',').map(o => o.trim()) ?? '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Content-Type', 'Authorization',
       'api-key', 'fg-pass',
-      process.env.API_KEY_HEADER ?? 'x-api-key',
+      process.env.API_KEY_HEADER_NAME ?? 'api-key',
     ],
     credentials: true,
   });
@@ -37,7 +37,7 @@ async function bootstrap() {
 
 
   const logger = new Logger('Bootstrap');
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.API_PORT ?? 3000;
   await app.listen(port);
   logger.log(`Application running on http://localhost:${port}/docs`);
 
