@@ -19,7 +19,27 @@ npm run start:prod    # node dist/main
 npm run lint          # eslint --fix
 npm test              # jest
 npm run test:e2e      # jest e2e
+npm run migration:run # applique les migrations en attente
+npm run seed          # seed idempotent (admin principal pour l'instant)
+npm run seed:refresh  # supprime puis recrée l'admin principal
 ```
+
+### Seed
+
+`src/seeder.ts` est l'entrypoint CLI — lifecycle uniquement (connexion `DataSource`
+TypeORM des migrations, flag `--refresh`, pas de boot Nest complet, pas besoin de
+Redis/BullMQ). La logique de chaque seed vit dans `database/seeds/` (un fichier par
+concern, ex. `seed-admin.ts`) pour rester ajoutable sans toucher l'entrypoint quand
+d'autres seeds (jurisdictions, action categories...) arriveront. Nécessite les
+migrations déjà appliquées. Variables `.env` requises : `SEED_ADMIN_EMAIL`,
+`SEED_ADMIN_PASSWORD` (validées — email au format valide, mot de passe ≥ 8 caractères
+— **avant** toute connexion DB, pour échouer vite) ; `SEED_ADMIN_FIRST_NAME`/
+`SEED_ADMIN_LAST_NAME` optionnels, défaut "Admin DiaspoVote". Mot de passe haché via
+`apiHashPassword` (bcrypt, même fonction que `AuthService.register()`) — pas Argon2id,
+pour rester compatible avec `apiComparePasswords` au login. `npm run seed` est
+idempotent (ignore si l'email existe
+déjà) ; `--refresh` fait un hard delete puis recrée (nécessaire pour libérer la
+contrainte unique sur l'email, un soft-delete ne suffirait pas).
 
 ## Architecture
 
