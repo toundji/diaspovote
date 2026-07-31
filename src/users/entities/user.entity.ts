@@ -5,7 +5,7 @@
 // ============================================================
 import { Entity, Column, BeforeInsert, ManyToOne, JoinColumn, RelationId, } from 'typeorm';
 import { Exclude, Expose } from 'class-transformer';
-import { Audit } from './audit';
+import { Audit } from '../../shared/audit';
 import { UserStatus, UserRole } from 'src/shared/common.enum';
 
 @Entity('users')

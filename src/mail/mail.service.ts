@@ -10,7 +10,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
-import { User } from '../auth/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 import {
     MAIL_QUEUE, MailJobType,
     ConfirmEmailJob, ResetPasswordJob,

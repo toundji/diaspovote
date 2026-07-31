@@ -18,6 +18,7 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ElectionsModule } from './election/elections.module';
 import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 
 
@@ -99,6 +100,7 @@ import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
     MailModule,
     AuthModule,
     UsersModule,
+    ElectionsModule,
     // VotreModule, // ← ajoutez vos modules métier ici
   ],
   controllers: [AppController],

@@ -12,7 +12,7 @@ import * as crypto from 'crypto';
 import 'dotenv/config';
 import { compareSync, hashSync } from 'bcrypt';
 import { ApiClientType, DeviceType, TokenType } from '../shared/common.enum';
-import { User } from '../auth/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 // ── Constantes ───────────────────────────────────────────────
 
@@ -208,7 +208,6 @@ export function getApiClientType(apiKey: string): ApiClientType | null {
     const map: Record<string, ApiClientType> = {
         [process.env.API_KEY_MOBILE ?? '_']: ApiClientType.mobile,
         [process.env.API_KEY_IOS ?? '_']: ApiClientType.ios,
-        [process.env.API_KEY_MANAGER ?? '_']: ApiClientType.manager,
         [process.env.API_KEY_WEB_APP ?? '_']: ApiClientType.web_app,
         [process.env.API_KEY_LANDING ?? '_']: ApiClientType.landing,
         [process.env.API_KEY_WEB ?? '_']: ApiClientType.web,
@@ -222,7 +221,7 @@ export function getApiClientType(apiKey: string): ApiClientType | null {
 // ── Helpers ───────────────────────────────────────────────────
 
 export function isAdminRole(roles: string[]): boolean {
-    return ['admin', 'manager', 'engineer'].some(r => roles.includes(r));
+    return ['admin', 'commission'].some(r => roles.includes(r));
 }
 
 

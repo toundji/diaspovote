@@ -9,7 +9,7 @@ import { Request, Response, NextFunction } from 'express';
 import { getApiClientType, parseUserAgent } from '../../utils/api-util';
 import { TokenType } from '../../shared/common.enum';
 import 'dotenv/config';
-import { AuthApiRequest } from '../../auth/dto/auth.type.dto';
+import { AuthApiRequest } from '../../shared/auth.type.dto';
 
 const requestIp = require('request-ip');
 

@@ -10,12 +10,12 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { AuthService } from '../services/auth.service';
-import { PasswordService } from '../services/password.service';
-import { OtpService } from '../services/otp.service';
+import { PasswordService } from '../../users/services/password.service';
+import { OtpService } from '../../users/services/otp.service';
 
 import { Public, NoKey, AllowStatus, GetUser, AuditInfo, } from '../../core/decorators/api.decorator';
 
-import { JwtUserInfo } from '../dto/auth.type.dto';
+import { JwtUserInfo } from '../../shared/auth.type.dto';
 import { UserStatus } from '../../shared/common.enum';
 import { LoginDto, RefreshDto, ConfirmEmailDto, SendResetOtpDto, ConfirmResetOtpDto, ResetPasswordDto, UpdatePasswordDto, SendResetLinkDto, ResetFromLinkDto, LoginPinDto, SetupPinDto, ResetPinDto, GoogleAuthDto, type RegisterDto } from '../dto/auth.dto';
 
