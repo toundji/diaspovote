@@ -48,6 +48,11 @@ export class AdminCreateUserDto {
     @IsOptional()
     phone?: string;
 
+    /** URL directe (choix "coller une URL"). Pour un upload de fichier, voir POST /users/:id/profile/image après création. */
+    @IsUrl({}, { message: "L'URL de l'avatar est invalide." })
+    @IsOptional()
+    profile?: string;
+
     /** Défaut : [voter] si omis. */
     @IsArray()
     @IsEnum(UserRole, { each: true, message: 'Un ou plusieurs rôles sont invalides.' })

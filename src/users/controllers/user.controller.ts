@@ -211,4 +211,24 @@ export class UserController {
     updateProfile(@Body() body: ImageDto, @GetUser() user: User): Promise<User> {
         return this.userService.updateImageProfile(user.id, body);
     }
+
+    // ── Admin — photo de profil d'un utilisateur ─────────────
+
+    /**
+     * POST /users/:id/profile/image
+     * Uploader/remplacer la photo de profil d'un utilisateur quelconque
+     * (ex: juste après sa création depuis le back-office, si l'admin a
+     * choisi "uploader un fichier" plutôt que "coller une URL").
+     * Accessible : admin uniquement (depuis le back-office).
+     */
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin)
+    @FormDataRequest()
+    @ApiConsumes("multipart/form-data")
+    @ApiBearerAuth()
+    @ApiOperation({ summary: "[Admin] Uploader la photo de profil d'un utilisateur" })
+    @Post(':id/profile/image')
+    adminUpdateProfileImage(@Param('id') id: string, @Body() body: ImageDto): Promise<User> {
+        return this.userService.updateImageProfile(id, body);
+    }
 }

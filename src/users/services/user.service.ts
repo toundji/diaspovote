@@ -86,6 +86,7 @@ export class UserService {
             firstName: body.firstName,
             lastName: body.lastName,
             phone: body.phone,
+            profile: body.profile,
             roles: body.roles?.length ? body.roles : [UserRole.voter],
             status: body.status ?? UserStatus.active,
         });
