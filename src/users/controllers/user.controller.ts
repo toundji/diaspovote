@@ -12,8 +12,14 @@ import { UserService } from '../services/user.service';
 
 import { AllowStatus, GetUser, Roles, RequireClientType } from '../../core/decorators/api.decorator';
 
-// Type minimal injecté par le middleware JWT (req.user)
-import type { AdminCreateUserDto, AdminResetPasswordDto, AdminUpdateRolesDto, AdminUpdateStatusDto, ListUsersQuery, UpdateProfileDto } from '../dto/user.dto';
+// Import de valeur (pas `import type`) : ce sont des classes utilisées comme
+// metatype par le ValidationPipe (@Body() body: XxxDto) — un `import type` les
+// efface du JS émis, design:paramtypes perd la référence, et class-validator
+// ne valide plus rien silencieusement (bug réel constaté : email undefined
+// arrivait jusqu'au repository sur POST /users faute de validation).
+import { AdminCreateUserDto, AdminResetPasswordDto, AdminUpdateRolesDto, AdminUpdateStatusDto, UpdateProfileDto } from '../dto/user.dto';
+// ListUsersQuery est une interface (aucune représentation runtime) : reste en import type.
+import type { ListUsersQuery } from '../dto/user.dto';
 import { ApiClientType, UserRole, UserStatus } from 'src/shared/common.enum';
 import { JwtUserInfo } from 'src/auth/dto/auth.type.dto';
 import { FormDataRequest } from 'nestjs-form-data';
