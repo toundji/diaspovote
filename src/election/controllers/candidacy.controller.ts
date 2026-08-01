@@ -19,7 +19,7 @@ import { GetUser, Public, Roles, RequireClientType } from 'src/core/decorators/a
 import { ApiClientType, UserRole } from 'src/shared/common.enum';
 import { JwtUserInfo } from 'src/auth/dto/auth.type.dto';
 
-import { CreateCandidacyDto, UpdateCandidacyDto } from '../dto/candidacy.dto';
+import { CreateCandidacyAdminDto, CreateCandidacyDto, UpdateCandidacyDto } from '../dto/candidacy.dto';
 import type { ListCandidaciesQuery } from '../dto/candidacy.dto';
 import { UpsertCandidacyProgramDto } from '../dto/candidacy-program.dto';
 import { CreateCampaignPostDto, UpdateCampaignPostDto } from '../dto/campaign-post.dto';
@@ -41,6 +41,22 @@ export class CandidacyController {
     @ApiOperation({ summary: 'Soumettre sa candidature à une élection' })
     submit(@GetUser() user: JwtUserInfo, @Body() body: CreateCandidacyDto) {
         return this.candidacyService.submit(user.id, body);
+    }
+
+    /**
+     * Additif au flux self-service ci-dessus (ne le remplace pas) : permet à
+     * la commission/admin de créer une candidature pour un tiers depuis le
+     * back-office (ex: candidat sans accès à l'appli, ou test). Délègue à la
+     * même validation métier (`CandidacyService.submit`), seul le `userId`
+     * vient du corps de la requête plutôt que du JWT appelant.
+     */
+    @Post('admin')
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin, UserRole.commission)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: '[Admin/Commission] Créer une candidature pour un utilisateur' })
+    submitForUser(@Body() body: CreateCandidacyAdminDto) {
+        return this.candidacyService.submit(body.userId, body);
     }
 
     @Patch(':id')

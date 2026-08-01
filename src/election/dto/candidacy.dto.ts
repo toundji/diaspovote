@@ -19,6 +19,18 @@ export class CreateCandidacyDto {
     photoUrl?: string;
 }
 
+/**
+ * Création par un admin/commission depuis le back-office, pour un utilisateur
+ * qui n'est pas l'appelant (ex: candidat sans accès à l'appli). Purement
+ * additive : ne remplace pas `submit()` (candidat authentifié sur soi-même),
+ * délègue à la même logique via `CandidacyService.submit(dto.userId, dto)`.
+ */
+export class CreateCandidacyAdminDto extends CreateCandidacyDto {
+    @IsUUID()
+    @IsNotEmpty()
+    userId!: string;
+}
+
 export class UpdateCandidacyDto {
     @IsString()
     @IsOptional()
