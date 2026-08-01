@@ -13,7 +13,7 @@ import { UserService } from '../services/user.service';
 import { AllowStatus, GetUser, Roles, RequireClientType } from '../../core/decorators/api.decorator';
 
 // Type minimal injecté par le middleware JWT (req.user)
-import type { AdminResetPasswordDto, AdminUpdateRolesDto, AdminUpdateStatusDto, ListUsersQuery, UpdateProfileDto } from '../dto/user.dto';
+import type { AdminCreateUserDto, AdminResetPasswordDto, AdminUpdateRolesDto, AdminUpdateStatusDto, ListUsersQuery, UpdateProfileDto } from '../dto/user.dto';
 import { ApiClientType, UserRole, UserStatus } from 'src/shared/common.enum';
 import { JwtUserInfo } from 'src/auth/dto/auth.type.dto';
 import { FormDataRequest } from 'nestjs-form-data';
@@ -65,6 +65,23 @@ export class UserController {
     @ApiOperation({ summary: 'Supprimer son compte (soft-delete → status deleted)' })
     deleteMe(@GetUser() user: JwtUserInfo) {
         return this.userService.softDeleteMe(user.id);
+    }
+
+    // ── Admin — création ──────────────────────────────────────
+
+    /**
+     * POST /users
+     * Créer un utilisateur (ex: membre de la commission, autre admin).
+     * Contourne l'auto-inscription : statut actif par défaut, pas d'OTP de confirmation.
+     * Accessible : admin uniquement (depuis le back-office).
+     */
+    @Post()
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: '[Admin] Créer un utilisateur' })
+    createUser(@Body() body: AdminCreateUserDto) {
+        return this.userService.adminCreateUser(body);
     }
 
     // ── Admin — liste ─────────────────────────────────────────

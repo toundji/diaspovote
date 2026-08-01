@@ -9,12 +9,13 @@ import { Repository, FindManyOptions, ILike, FindOptionsWhere, IsNull, Not } fro
 
 import { User } from '../entities/user.entity';
 import { ApiError, ApiErrorDb, ApiErrorNotFoundById } from '../../utils/api-error';
-import { UpdateProfileDto, ListUsersQuery, PaginatedUsers } from '../dto/user.dto';
+import { AdminCreateUserDto, UpdateProfileDto, ListUsersQuery, PaginatedUsers } from '../dto/user.dto';
 import { PasswordService } from '../../auth/services/password.service';
 import { SessionService } from '../../auth/services/session.service';
 import { UserStatus, UserRole, FileStatus } from 'src/shared/common.enum';
 import { ImageDto } from 'src/shared/media.dto';
 import { ApiFsUtils } from 'src/utils/api-fs';
+import { apiHashPassword } from 'src/utils/api-util';
 
 // ── Champs autorisés en retour (jamais le password ni le code interne) ──
 
@@ -62,6 +63,38 @@ export class UserService {
         await this.userRepo.update(userId, { status: UserStatus.deleted });
         await this.sessionService.deleteAllSessions(userId);
         return { success: true };
+    }
+
+    // ── Admin — création ───────────────────────────────────────
+
+    /**
+     * Créer un utilisateur depuis le back-office.
+     * Contourne le flux d'auto-inscription : statut actif par défaut (pas d'OTP
+     * de confirmation), rôles explicites (ex: commission, admin). Mot de passe
+     * haché via apiHashPassword (bcrypt) — même fonction qu'AuthService.register(),
+     * pour rester compatible avec apiComparePasswords au login.
+     */
+    async adminCreateUser(body: AdminCreateUserDto): Promise<User> {
+        const existing = await this.userRepo.findOne({ where: { email: body.email } });
+        if (existing) {
+            throw new ApiError('Cet email est déjà utilisé.');
+        }
+
+        const userData = this.userRepo.create({
+            email: body.email,
+            password: apiHashPassword(body.password),
+            firstName: body.firstName,
+            lastName: body.lastName,
+            phone: body.phone,
+            roles: body.roles?.length ? body.roles : [UserRole.voter],
+            status: body.status ?? UserStatus.active,
+        });
+
+        const user = await this.userRepo.save(userData).catch(err => {
+            throw new ApiErrorDb('users', 'create', userData, err);
+        });
+
+        return this.getById(user.id);
     }
 
     // ── Admin — lecture / liste ───────────────────────────────

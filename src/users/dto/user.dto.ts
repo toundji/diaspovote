@@ -4,7 +4,7 @@
 // ============================================================
 
 import {
-    IsString, IsOptional, IsEnum,
+    IsString, IsOptional, IsEnum, IsEmail,
     IsArray, IsUrl, MinLength, IsNotEmpty,
 } from 'class-validator';
 import { User } from '../entities/user.entity';
@@ -27,6 +27,38 @@ export class UpdateProfileDto {
 }
 
 // ── Admin ─────────────────────────────────────────────────────
+
+export class AdminCreateUserDto {
+    @IsEmail({}, { message: 'Email invalide.' })
+    email!: string;
+
+    @IsString()
+    @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' })
+    password!: string;
+
+    @IsString()
+    @IsOptional()
+    firstName?: string;
+
+    @IsString()
+    @IsOptional()
+    lastName?: string;
+
+    @IsString()
+    @IsOptional()
+    phone?: string;
+
+    /** Défaut : [voter] si omis. */
+    @IsArray()
+    @IsEnum(UserRole, { each: true, message: 'Un ou plusieurs rôles sont invalides.' })
+    @IsOptional()
+    roles?: UserRole[];
+
+    /** Défaut : active — un compte créé par un admin n'a pas besoin de re-vérifier son email. */
+    @IsEnum(UserStatus, { message: 'Statut invalide.' })
+    @IsOptional()
+    status?: UserStatus;
+}
 
 export class AdminResetPasswordDto {
     /** userId ou email */
