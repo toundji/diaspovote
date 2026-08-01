@@ -76,7 +76,8 @@ Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 - **`auth → users` uniquement, jamais l'inverse.** `auth/` orchestre l'authentification
   contre l'agrégat `users/`. `users/` ignore l'existence de `auth/`. Aucun cycle de modules,
   aucun `forwardRef()`. `PasswordService`/`SessionService`/`OtpService` vivent dans `users/`
-  (pas dans `auth/`) précisément pour éviter le cycle `users → auth → users`.
+  (pas dans `auth/`) précisément pour éviter le cycle `users → auth → users`. Journal détaillé
+  des décisions sur ce module : `src/auth/auth.md`.
 - **`mail/` et `utils/` ne dépendent d'aucune entité métier.** Un service qui a juste besoin
   de `{ email, firstName }` type sur une interface structurelle locale (ex. `MailRecipient`
   dans `mail.types.ts`, `JwtPayloadUser` dans `api-util.ts`) plutôt que d'importer `User`.
