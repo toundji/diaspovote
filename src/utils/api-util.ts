@@ -11,7 +11,7 @@
 import * as crypto from 'crypto';
 import 'dotenv/config';
 import { compareSync, hashSync } from 'bcrypt';
-import { ApiClientType, DeviceType, TokenType, UserRole } from '../shared/common.enum';
+import { ApiClientType, DeviceType, TokenType, UserRole, UserStatus } from '../shared/common.enum';
 
 // ── Constantes ───────────────────────────────────────────────
 
@@ -91,7 +91,8 @@ export function apiComparePasswords(password: string, hash: string): boolean {
 export interface JwtPayload {
     sub: string;
     email: string;
-    roles: string[];
+    status: UserStatus;
+    roles: UserRole[];
     type: TokenType;
     jti: string;
     dfp: string; // deviceFingerprint — abrégé pour minimiser la taille du token
@@ -101,6 +102,7 @@ export interface JwtPayload {
 export interface JwtPayloadUser {
     id: string;
     email?: string;
+    status?: UserStatus;
     roles?: UserRole[];
 }
 
@@ -118,6 +120,7 @@ export function apiGeneratePayLoad(user: JwtPayloadUser, type: TokenType, device
         sub: user.id,
         email: user.email ?? '',
         roles: user.roles ?? [],
+        status: user.status ?? '',
         type,
         jti: crypto.randomUUID(),
         dfp: deviceFingerprint,

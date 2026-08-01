@@ -127,6 +127,8 @@ export class RequireUserStatusGuard implements CanActivate {
 
         const req = context.switchToHttp().getRequest();
         const user = req.user;
+
+        console.log(user);
         if (!user) return false;
 
         // Statuts explicitement autorisés (ex: unverified peut accéder à /confirm)
