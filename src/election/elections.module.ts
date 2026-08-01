@@ -15,6 +15,7 @@ import { Election } from './entities/election.entity';
 import { Candidacy } from './entities/candidacy.entity';
 import { CandidacyProgram } from './entities/candidacy-program.entity';
 import { CampaignPost } from './entities/campaign-post.entity';
+import { Position } from './entities/position.entity';
 
 import { ElectionController } from './controllers/election.controller';
 import { ElectoralRollController } from './controllers/electoral-roll.controller';
@@ -22,6 +23,7 @@ import { JurisdictionController } from './controllers/jurisdiction.controller';
 import { CandidacyController } from './controllers/candidacy.controller';
 import { ConditionController } from './controllers/condition.controller';
 import { VoteController } from './controllers/vote.controller';
+import { PositionController } from './controllers/position.controller';
 
 import { ElectionService } from './services/election.service';
 import { ElectoralRollService } from './services/electoral-roll.service';
@@ -31,6 +33,7 @@ import { CandidacyProgramService } from './services/candidacy-program.service';
 import { CampaignPostService } from './services/campaign-post.service';
 import { ConditionService } from './services/condition.service';
 import { VoteService } from './services/vote.service';
+import { PositionService } from './services/position.service';
 
 @Module({
     imports: [
@@ -43,6 +46,7 @@ import { VoteService } from './services/vote.service';
             Candidacy,
             CandidacyProgram,
             CampaignPost,
+            Position,
         ]),
     ],
     controllers: [
@@ -52,6 +56,7 @@ import { VoteService } from './services/vote.service';
         CandidacyController,
         ConditionController,
         VoteController,
+        PositionController,
     ],
     providers: [
         ElectionService,
@@ -62,6 +67,7 @@ import { VoteService } from './services/vote.service';
         CampaignPostService,
         ConditionService,
         VoteService,
+        PositionService,
     ],
     exports: [
         ElectionService,
@@ -72,6 +78,7 @@ import { VoteService } from './services/vote.service';
         CampaignPostService,
         ConditionService,
         VoteService,
+        PositionService,
     ],
 })
 export class ElectionsModule { }

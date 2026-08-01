@@ -10,6 +10,7 @@ import { Repository, FindOptionsWhere, IsNull, Not } from 'typeorm';
 
 import { Candidacy } from '../entities/candidacy.entity';
 import { Election } from '../entities/election.entity';
+import { Position } from '../entities/position.entity';
 import { ElectionStatus } from '../entities/election.enum';
 
 import { ApiError, ApiErrorNotFoundById } from 'src/utils/api-error';
@@ -20,6 +21,7 @@ export class CandidacyService {
     constructor(
         @InjectRepository(Candidacy) private readonly candidacyRepo: Repository<Candidacy>,
         @InjectRepository(Election) private readonly electionRepo: Repository<Election>,
+        @InjectRepository(Position) private readonly positionRepo: Repository<Position>,
     ) { }
 
     // ── Soumission ────────────────────────────────────────────
@@ -32,6 +34,8 @@ export class CandidacyService {
             throw new ApiError('Cette élection est clôturée, aucune candidature ne peut être soumise.');
         }
 
+        await this.assertActivePosition(dto.positionId);
+
         const exists = await this.candidacyRepo.findOne({
             where: { userId, electionId: dto.electionId },
         });
@@ -42,7 +46,7 @@ export class CandidacyService {
         const candidacy = this.candidacyRepo.create({
             userId,
             electionId: dto.electionId,
-            position: dto.position,
+            positionId: dto.positionId,
             photoUrl: dto.photoUrl,
         });
         return this.candidacyRepo.save(candidacy);
@@ -91,8 +95,10 @@ export class CandidacyService {
         this.assertOwner(candidacy, userId);
         this.assertPending(candidacy);
 
+        if (dto.positionId) await this.assertActivePosition(dto.positionId);
+
         Object.assign(candidacy, {
-            position: dto.position ?? candidacy.position,
+            positionId: dto.positionId ?? candidacy.positionId,
             photoUrl: dto.photoUrl ?? candidacy.photoUrl,
         });
         return this.candidacyRepo.save(candidacy);
@@ -140,6 +146,14 @@ export class CandidacyService {
     private assertPending(candidacy: Candidacy): void {
         if (candidacy.approvedAt || candidacy.rejectedAt) {
             throw new ApiError('Cette candidature a déjà été traitée.');
+        }
+    }
+
+    private async assertActivePosition(positionId: string): Promise<void> {
+        const position = await this.positionRepo.findOne({ where: { id: positionId } });
+        if (!position) throw new ApiErrorNotFoundById('positions', positionId);
+        if (!position.isActive) {
+            throw new ApiError('Ce poste n\'est plus disponible.');
         }
     }
 }
