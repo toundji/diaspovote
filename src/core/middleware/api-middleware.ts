@@ -11,6 +11,9 @@ import { TokenType } from '../../shared/common.enum';
 import 'dotenv/config';
 import { AuthApiRequest } from '../../auth/dto/auth.type.dto';
 
+import { format as dateFnsFormat } from 'date-fns';
+
+
 const requestIp = require('request-ip');
 
 
@@ -82,6 +85,8 @@ export class ApiDeserializationMiddleware implements NestMiddleware {
         } catch {
             // Non bloquant
         }
+        logRequest(req)
+
 
         next();
     }
@@ -151,4 +156,10 @@ export class WebSocketAuthMiddleware implements NestMiddleware {
         const [type, token] = (socket.handshake?.headers?.authorization ?? '').split(' ');
         return type === 'Bearer' ? token : undefined;
     }
+}
+
+
+
+function logRequest(req) {
+    console.log(`${dateFnsFormat(new Date(), "dd.MM.yyyy, hh:mm:ss")} ${req.method}: ${req.path}; by ${req.user?.email} from ip ${req.userIp} and devise ${req.userDevise}`);
 }
