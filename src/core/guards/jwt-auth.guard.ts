@@ -128,7 +128,6 @@ export class RequireUserStatusGuard implements CanActivate {
         const req = context.switchToHttp().getRequest();
         const user = req.user;
 
-        console.log(user);
         if (!user) return false;
 
         // Statuts explicitement autorisés (ex: unverified peut accéder à /confirm)
@@ -147,6 +146,9 @@ export class RequireUserStatusGuard implements CanActivate {
             const ok = requiredStatus.includes(user.status);
             if (!ok) throw new ApiError('Access denied. User status not allowed.', {
                 code: HttpStatus.FORBIDDEN,
+                level: 'warn',
+                shouldLog: true,
+                detail: `User "${user.email}" (status: ${user.status}) required one of [${requiredStatus.join(', ')}]`,
             });
             return ok;
         }
@@ -155,6 +157,9 @@ export class RequireUserStatusGuard implements CanActivate {
         if (user.status !== UserStatus.active) {
             throw new ApiError('Access denied. Account is not active.', {
                 code: HttpStatus.FORBIDDEN,
+                level: 'warn',
+                shouldLog: true,
+                detail: `User "${user.email}" has status "${user.status}", expected "active"`,
             });
         }
         return true;
