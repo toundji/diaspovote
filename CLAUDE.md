@@ -225,7 +225,10 @@ décidé pour séparer ces deux préoccupations.
   controller (`/candidacies`). État dérivé de `approvedAt`/`rejectedAt` (pas de colonne
   status), même convention que `Achievement`. Lecture publique (portail vitrine), écriture
   réservée au propriétaire, revue (`approve`/`reject`) réservée à `commission`/`admin`
-  **depuis le back-office** (`@RequireClientType(back_office)`).
+  **depuis le back-office** (`@RequireClientType(back_office)`). `POST /candidacies/admin`
+  (admin/commission, back-office) est un **ajout additif** pour créer une candidature au nom
+  d'un tiers (candidat sans accès à l'appli, ou test) — délègue à la même validation que le
+  flux self-service (`CandidacyService.submit(userId, dto)`), ne le remplace ni ne l'altère.
 - ✅ `Condition` — CRUD par élection (`/elections/:electionId/conditions`), lecture publique,
   écriture admin.
 - ✅ `Vote` — `/votes` : cast (vérifie élection active + fenêtre startsAt/endsAt, inscription
