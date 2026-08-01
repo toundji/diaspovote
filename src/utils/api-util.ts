@@ -91,7 +91,7 @@ export function apiComparePasswords(password: string, hash: string): boolean {
 export interface JwtPayload {
     sub: string;
     email: string;
-    status: UserStatus;
+    status?: UserStatus;
     roles: UserRole[];
     type: TokenType;
     jti: string;
@@ -120,7 +120,7 @@ export function apiGeneratePayLoad(user: JwtPayloadUser, type: TokenType, device
         sub: user.id,
         email: user.email ?? '',
         roles: user.roles ?? [],
-        status: user.status ?? '',
+        status: user.status ?? undefined,
         type,
         jti: crypto.randomUUID(),
         dfp: deviceFingerprint,
