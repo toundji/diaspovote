@@ -10,8 +10,8 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { AuthService } from '../services/auth.service';
-import { PasswordService } from '../../users/services/password.service';
-import { OtpService } from '../../users/services/otp.service';
+import { PasswordService } from '../services/password.service';
+import { OtpService } from '../services/otp.service';
 
 import { Public, NoKey, AllowStatus, GetUser, AuditInfo, } from '../../core/decorators/api.decorator';
 
