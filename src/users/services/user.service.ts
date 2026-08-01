@@ -10,23 +10,11 @@ import { Repository, FindManyOptions, ILike, FindOptionsWhere, IsNull, Not } fro
 import { User } from '../entities/user.entity';
 import { ApiError, ApiErrorDb, ApiErrorNotFoundById } from '../../utils/api-error';
 import { UpdateProfileDto, ListUsersQuery, PaginatedUsers } from '../dto/user.dto';
-import { PasswordService } from 'src/auth/services/password.service';
-import { SessionService } from 'src/auth/services/session.service';
+import { PasswordService } from './password.service';
+import { SessionService } from './session.service';
 import { UserStatus, UserRole, FileStatus } from 'src/shared/common.enum';
 import { ImageDto } from 'src/shared/media.dto';
 import { ApiFsUtils } from 'src/utils/api-fs';
-
-// ── Types internes ────────────────────────────────────────────
-
-export interface GoogleProfile {
-    googleId: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
-    picture?: string;
-}
-
-
 
 // ── Champs autorisés en retour (jamais le password ni le code interne) ──
 
@@ -46,48 +34,6 @@ export class UserService {
         private readonly sessionService: SessionService,
         private readonly passwordService: PasswordService,
     ) { }
-
-    // ── Google Firebase Auth ──────────────────────────────────
-
-    /**
-     * Trouve ou crée un utilisateur depuis un profil Google Firebase.
-     *
-     * Cas 1 — googleId connu → login direct
-     * Cas 2 — email connu mais pas de googleId → lier le compte existant
-     * Cas 3 — compte inconnu → créer un nouveau compte (emailVerified, pas de password)
-     */
-    async findOrCreateGoogleUser(profile: GoogleProfile): Promise<User> {
-
-        // Cas 1 — compte déjà lié à ce googleId
-        const byGoogleId = await this.userRepo.findOne({
-            where: { googleId: profile.googleId },
-        });
-        if (byGoogleId) return byGoogleId;
-
-        // Cas 2 — email existant → lier le googleId
-        if (profile.email) {
-            const byEmail = await this.userRepo.findOne({
-                where: { email: profile.email },
-            });
-            if (byEmail) {
-                await this.userRepo.update(byEmail.id, { googleId: profile.googleId });
-                return this.userRepo.findOne({ where: { id: byEmail.id } }) as Promise<User>;
-            }
-        }
-
-        // Cas 3 — nouveau compte
-        const user = this.userRepo.create({
-            email: profile.email,
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            profile: profile.picture,
-            googleId: profile.googleId,
-            status: UserStatus.active,   // emailVerified côté Google → pas besoin de confirmation
-            roles: [UserRole.user],
-        });
-
-        return this.userRepo.save(user);
-    }
 
     // ── Profil personnel ──────────────────────────────────────
 

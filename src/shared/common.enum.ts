@@ -7,13 +7,9 @@
 /**
  * Rôles applicatifs. Colonne MySQL de type SET → un utilisateur
  * peut cumuler plusieurs rôles (ex: [voter, commission]).
- *
- * ⚠️ Après ce changement, adapter les @Roles(...) du template :
- *    src/users/controllers/user.controller.ts référence encore
- *    manager / engineer → remplacer par admin / commission.
  */
 export enum UserRole {
-    user = 'user',
+    voter = 'voter',
     candidate = 'candidate',
     admin = 'admin',
     commission = 'commission',

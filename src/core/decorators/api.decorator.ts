@@ -6,7 +6,7 @@ import {
     createParamDecorator, ExecutionContext,
     SetMetadata,
 } from '@nestjs/common';
-import { UserRole, UserStatus } from '../../shared/common.enum';
+import { ApiClientType, UserRole, UserStatus } from '../../shared/common.enum';
 
 // ── Décorateurs de route ─────────────────────────────────────
 
@@ -18,6 +18,17 @@ export const NoKey = () => SetMetadata('noKey', true);
 
 /** Requiert un ou plusieurs rôles */
 export const Roles = (...roles: UserRole[]) => SetMetadata('roles', roles);
+
+/**
+ * Restreint la route à un ou plusieurs types de client (clé API).
+ * Distinct de @Roles() : @Roles vérifie QUI appelle (rôle utilisateur JWT),
+ * @RequireClientType vérifie DEPUIS OÙ (portail public, back-office, appli
+ * mobile...) — déterminé par la clé API envoyée, indépendamment du JWT.
+ * Utile pour interdire les routes d'administration même à un compte admin
+ * si l'appel ne provient pas de la clé API back-office.
+ */
+export const RequireClientType = (...types: ApiClientType[]) =>
+    SetMetadata('clientTypes', types);
 
 /** Requiert un statut utilisateur spécifique */
 export const RequireStatus = (...statuses: UserStatus[]) =>

@@ -10,8 +10,8 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 
 import { AuthService } from '../services/auth.service';
-import { PasswordService } from '../services/password.service';
-import { OtpService } from '../services/otp.service';
+import { PasswordService } from '../../users/services/password.service';
+import { OtpService } from '../../users/services/otp.service';
 
 import { Public, NoKey, AllowStatus, GetUser, AuditInfo, } from '../../core/decorators/api.decorator';
 
@@ -29,7 +29,7 @@ export class AuthController {
     ) { }
 
     // ── Inscription ──────────────────────────────────────────
-
+    @Public()
     @Post('register')
     @ApiOperation({ summary: 'Inscription + envoi OTP confirmation' })
     register(@Body() body: RegisterDto, @AuditInfo() audit: any,) {
@@ -38,6 +38,7 @@ export class AuthController {
 
     // ── Login ─────────────────────────────────────────────────
 
+    @Public()
     @Post('login')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Login email + password' })

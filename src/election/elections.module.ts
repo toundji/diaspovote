@@ -1,8 +1,8 @@
 // ============================================================
 // elections.module.ts
-// Module du cœur électoral.
-// Entités enregistrées ici ; controllers/services de Vote, Condition
-// et ElectoralRoll viendront s'ajouter dans les blocs suivants.
+// Module du cœur électoral (processus électoral DiaspoVote).
+// Le suivi post-élection (Achievement, Contestation, Question, AuditLog)
+// vit dans un module séparé : oversight/ (à créer).
 // ============================================================
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,15 +10,27 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Jurisdiction } from './entities/jurisdiction.entity';
 import { ElectoralRoll } from './entities/electoral-roll.entity';
 import { Vote } from './entities/vote.entity';
-
-import { ElectionService } from './services/election.service';
 import { Condition } from './entities/condition.entity';
-import { ElectionController } from './controllers/election.controller';
 import { Election } from './entities/election.entity';
+import { Candidacy } from './entities/candidacy.entity';
+import { CandidacyProgram } from './entities/candidacy-program.entity';
+import { CampaignPost } from './entities/campaign-post.entity';
+
+import { ElectionController } from './controllers/election.controller';
 import { ElectoralRollController } from './controllers/electoral-roll.controller';
 import { JurisdictionController } from './controllers/jurisdiction.controller';
+import { CandidacyController } from './controllers/candidacy.controller';
+import { ConditionController } from './controllers/condition.controller';
+import { VoteController } from './controllers/vote.controller';
+
+import { ElectionService } from './services/election.service';
 import { ElectoralRollService } from './services/electoral-roll.service';
 import { JurisdictionService } from './services/jurisdiction.service';
+import { CandidacyService } from './services/candidacy.service';
+import { CandidacyProgramService } from './services/candidacy-program.service';
+import { CampaignPostService } from './services/campaign-post.service';
+import { ConditionService } from './services/condition.service';
+import { VoteService } from './services/vote.service';
 
 @Module({
     imports: [
@@ -28,22 +40,38 @@ import { JurisdictionService } from './services/jurisdiction.service';
             Condition,
             ElectoralRoll,
             Vote,
+            Candidacy,
+            CandidacyProgram,
+            CampaignPost,
         ]),
     ],
     controllers: [
         ElectionController,
         JurisdictionController,
         ElectoralRollController,
+        CandidacyController,
+        ConditionController,
+        VoteController,
     ],
     providers: [
         ElectionService,
         JurisdictionService,
         ElectoralRollService,
+        CandidacyService,
+        CandidacyProgramService,
+        CampaignPostService,
+        ConditionService,
+        VoteService,
     ],
     exports: [
         ElectionService,
         JurisdictionService,
         ElectoralRollService,
+        CandidacyService,
+        CandidacyProgramService,
+        CampaignPostService,
+        ConditionService,
+        VoteService,
     ],
 })
 export class ElectionsModule { }

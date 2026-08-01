@@ -8,7 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
-import { ApiKeyGuard, RequireAuthGuard, RequireUserStatusGuard, RequireRoleGuard } from './core/guards/jwt-auth.guard';
+import { ApiKeyGuard, RequireClientTypeGuard, RequireAuthGuard, RequireUserStatusGuard, RequireRoleGuard } from './core/guards/jwt-auth.guard';
 import { ApiDeserializationMiddleware } from './core/middleware/api-middleware';
 import { UserAuditInterceptor, UserAuditSubscriber } from './core/interceptors/api-audit';
 import { ApiErrorFilter } from './core/filters/api-error-filter';
@@ -18,6 +18,8 @@ import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { ElectionsModule } from './election/elections.module';
+import { OversightModule } from './oversight/oversight.module';
 import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 
 
@@ -99,13 +101,15 @@ import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
     MailModule,
     AuthModule,
     UsersModule,
-    // VotreModule, // ← ajoutez vos modules métier ici
+    ElectionsModule,
+    OversightModule,
   ],
   controllers: [AppController],
   providers: [AppService,
 
     // ── Guards globaux (ordre important) ─────────────────
     { provide: APP_GUARD, useClass: ApiKeyGuard },
+    { provide: APP_GUARD, useClass: RequireClientTypeGuard },
     { provide: APP_GUARD, useClass: RequireAuthGuard },
     { provide: APP_GUARD, useClass: RequireUserStatusGuard },
     { provide: APP_GUARD, useClass: RequireRoleGuard },

@@ -10,11 +10,11 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@ne
 
 import { UserService } from '../services/user.service';
 
-import { AllowStatus, GetUser, Roles } from '../../core/decorators/api.decorator';
+import { AllowStatus, GetUser, Roles, RequireClientType } from '../../core/decorators/api.decorator';
 
 // Type minimal injecté par le middleware JWT (req.user)
 import type { AdminResetPasswordDto, AdminUpdateRolesDto, AdminUpdateStatusDto, ListUsersQuery, UpdateProfileDto } from '../dto/user.dto';
-import { UserRole, UserStatus } from 'src/shared/common.enum';
+import { ApiClientType, UserRole, UserStatus } from 'src/shared/common.enum';
 import { JwtUserInfo } from 'src/auth/dto/auth.type.dto';
 import { FormDataRequest } from 'nestjs-form-data';
 import { ImageDto } from 'src/shared/media.dto';
@@ -72,10 +72,11 @@ export class UserController {
     /**
      * GET /users
      * Liste paginée de tous les utilisateurs avec filtres optionnels.
-     * Accessible : admin, manager, engineer.
+     * Accessible : admin, commission (depuis le back-office uniquement).
      */
     @Get()
-    @Roles(UserRole.admin, UserRole.admin, UserRole.engineer)
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin, UserRole.commission)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Lister tous les utilisateurs (paginé + filtres)' })
     @ApiQuery({ name: 'page', required: false, type: Number, description: 'Numéro de page (défaut: 1)' })
@@ -92,10 +93,11 @@ export class UserController {
     /**
      * GET /users/:id
      * Récupérer un utilisateur par son id.
-     * Accessible : admin, manager, engineer.
+     * Accessible : admin, commission (depuis le back-office uniquement).
      */
     @Get(':id')
-    @Roles(UserRole.admin, UserRole.admin, UserRole.engineer)
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin, UserRole.commission)
     @ApiBearerAuth()
     @ApiOperation({ summary: '[Admin] Récupérer un utilisateur par id' })
     getUser(@Param('id') id: string) {
@@ -110,7 +112,8 @@ export class UserController {
      * Bloquer ou supprimer révoque immédiatement toutes ses sessions.
      */
     @Patch(':id/status')
-    @Roles(UserRole.admin, UserRole.admin)
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Changer le statut d'un utilisateur" })
     updateStatus(
@@ -125,9 +128,10 @@ export class UserController {
     /**
      * PATCH /users/:id/roles
      * Modifier les rôles d'un utilisateur.
-     * Accessible : admin uniquement.
+     * Accessible : admin uniquement (depuis le back-office).
      */
     @Patch(':id/roles')
+    @RequireClientType(ApiClientType.back_office)
     @Roles(UserRole.admin)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Modifier les rôles d'un utilisateur" })
@@ -143,13 +147,14 @@ export class UserController {
     /**
      * PATCH /users/admin/reset-password
      * Réinitialiser le mot de passe d'un utilisateur.
-     * Accessible : admin, engineer.
+     * Accessible : admin, commission (depuis le back-office uniquement).
      *
      * ⚠️  Cette route doit être déclarée AVANT `:id` pour éviter
      * que NestJS interprète "admin" comme un id.
      */
     @Patch('admin/reset-password')
-    @Roles(UserRole.admin, UserRole.engineer)
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin, UserRole.commission)
     @ApiBearerAuth()
     @ApiOperation({ summary: "[Admin] Réinitialiser le mot de passe d'un utilisateur" })
     adminResetPassword(@Body() body: AdminResetPasswordDto) {
@@ -162,9 +167,10 @@ export class UserController {
      * DELETE /users/:id
      * Hard-delete : suppression définitive de la DB.
      * Impossible de supprimer son propre compte via cette route.
-     * Accessible : admin uniquement.
+     * Accessible : admin uniquement (depuis le back-office).
      */
     @Delete(':id')
+    @RequireClientType(ApiClientType.back_office)
     @Roles(UserRole.admin)
     @HttpCode(HttpStatus.OK)
     @ApiBearerAuth()

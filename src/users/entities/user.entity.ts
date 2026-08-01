@@ -5,7 +5,7 @@
 // ============================================================
 import { Entity, Column, BeforeInsert, ManyToOne, JoinColumn, RelationId, } from 'typeorm';
 import { Exclude, Expose } from 'class-transformer';
-import { Audit } from './audit';
+import { Audit } from 'src/shared/audit';
 import { UserStatus, UserRole } from 'src/shared/common.enum';
 
 @Entity('users')
@@ -24,8 +24,19 @@ export class User extends Audit {
     @Column({ nullable: true, unique: true })
     email?: string;
 
+    @Column({ nullable: true })
+    phone?: string;
+
     @Column({ nullable: true, name: 'img_prof' })
     profile?: string;
+
+    /**
+     * Périmètre géographique (Jurisdiction) auquel appartient l'utilisateur.
+     * Simple colonne d'id (pas de relation TypeORM) : users/ ne dépend pas
+     * du module election/, conformément à la règle de dépendance à sens unique.
+     */
+    @Column({ nullable: true, name: 'jurisdiction_id' })
+    jurisdictionId?: string;
 
     // ── Sécurité ─────────────────────────────────────────────
 
@@ -46,10 +57,18 @@ export class User extends Audit {
     @Column({ nullable: true, unique: true, name: 'google_id', select: false })
     googleId?: string;
 
+    /**
+     * PIN haché Argon2id (mobile). select: false → jamais retourné dans les requêtes.
+     * Voir PasswordService pour le hashing/vérification.
+     */
+    @Exclude()
+    @Column({ nullable: true, name: 'pin_code', type: 'text', select: false })
+    pinCode?: string | null;
+
     @Column({ default: UserStatus.unverified, enum: UserStatus, type: 'enum' })
     status?: UserStatus;
 
-    @Column({ type: 'set', enum: UserRole, default: [UserRole.user] })
+    @Column({ type: 'set', enum: UserRole, default: [UserRole.voter] })
     roles?: UserRole[];
 
     /**
@@ -84,7 +103,7 @@ export class User extends Audit {
     prepare() {
         this.email = this.email?.trim()?.toLowerCase();
         this.code = User.entityCode + Date.now();
-        this.roles ??= [UserRole.user];
+        this.roles ??= [UserRole.voter];
         this.firstName = this.firstName?.trim();
         this.lastName = this.lastName?.trim();
     }
