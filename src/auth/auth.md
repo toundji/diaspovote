@@ -97,6 +97,38 @@ de direction qui suit.
 **Cette version fait foi.** Ne pas la ré-inverser sans discussion explicite — le placement de
 ces services a déjà changé de sens deux fois.
 
+## Changements annexes (hors placement users/auth)
+
+Fixes ponctuels touchant le socle auth/sécurité, sans impact sur le placement
+`auth/`↔`users/` documenté ci-dessus.
+
+### Statut utilisateur absent du JWT + rejets 403 muets dans les logs
+
+- Le payload JWT (`apiGeneratePayLoad`, `utils/api-util.ts`) ne sérialisait pas `status` →
+  `req.user.status` restait `undefined` côté middleware, donc `RequireUserStatusGuard`
+  rejetait des requêtes valides. Corrigé (payload inclut désormais `status`).
+- En creusant ce bug, constaté que `RequireUserStatusGuard` (`core/guards/jwt-auth.guard.ts`)
+  lançait ses `ApiError` (403) sans `shouldLog: true` → `ApiErrorFilter` les ignore par design
+  (seuls les 5xx et les 4xx marqués `shouldLog` sont logués). Ajouté `shouldLog: true`,
+  `level: 'warn'` et un `detail` (email + statut actuel/attendu) sur les deux rejets de ce
+  guard, pour qu'ils soient visibles en logs au lieu de disparaître silencieusement. Retiré au
+  passage un `console.log(user)` de debug laissé dans le guard.
+
+### `main.ts` — fichiers statiques, taille des payloads, Swagger en production
+
+- Swagger (`/docs`) doit rester **affiché en production**, protégé uniquement par le
+  `express-basic-auth` déjà en place sur cette route (pas de gate `NODE_ENV`). L'ancien bloc
+  commenté qui désactivait Swagger hors développement a été retiré (mort depuis longtemps,
+  `swagger_config(app)` tournait déjà sans condition).
+- Ajout du service de fichiers statiques `app.use('/public', expressStatic(...))` — sans ça,
+  les fichiers écrits par `ApiFsUtils.createDir`/`saveFile` (avatars, pièces jointes, sous
+  `public/storage/...`, déjà dans `.gitignore`) n'étaient jamais servables via HTTP malgré des
+  URLs générées vers `${API_ADDRESS}/public/...`.
+- `NestFactory.create(AppModule, { bodyParser: false })` + `express.json`/`urlencoded`
+  réappliqués manuellement avec `limit: '1gb'` (imports en masse, ex. liste électorale). Le
+  `bodyParser` interne de Nest devait être désactivé explicitement, sinon sa propre limite par
+  défaut s'applique avant que nos options aient la moindre chance d'être lues.
+
 ## Points d'attention pour la suite
 
 - **Ne pas réintroduire de dépendance `auth → users`.** Si `auth/` a besoin d'une opération
