@@ -56,6 +56,7 @@ export class ApiDeserializationMiddleware implements NestMiddleware {
                     req.user = {
                         id: payload.sub,
                         email: payload.email,
+                        status: payload.status,
                         roles: payload.roles,
                         type: payload.type,
                         jti: payload.jti,
