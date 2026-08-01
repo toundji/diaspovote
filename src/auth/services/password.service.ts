@@ -15,7 +15,7 @@ import { JwtService } from '@nestjs/jwt';
 import { addHours } from 'date-fns';
 import * as argon2 from 'argon2';
 
-import { User } from '../entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 import { OtpService } from './otp.service';
 import { SessionService } from './session.service';
 import { MailService } from '../../mail/mail.service';

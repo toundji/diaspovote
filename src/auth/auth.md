@@ -13,43 +13,44 @@ d'une mise à jour du `CLAUDE.md` racine si la règle d'architecture générale 
   sessions, reset password OTP/lien, PIN, Google).
 - `services/auth.service.ts` — orchestrateur : register/login/refresh/logout, Google Firebase
   Auth (`findOrCreateGoogleUser` **privé**, avec son propre `Repository<User>` — n'appelle pas
-  `UserService`), délègue à `SessionService`/`OtpService`/`PasswordService`/`NotificationService`
-  (importés depuis `users/`).
+  `UserService`), délègue à `SessionService`/`OtpService`/`PasswordService`/`NotificationService`.
+- `services/otp.service.ts` — génération/envoi/vérification OTP + rate limiting Redis.
+- `services/session.service.ts` — sessions multi-équipements (modèle Telegram :
+  `UserDevice` = équipement physique, `UserSession` = session active).
+- `services/password.service.ts` — reset password (OTP + lien email), PIN Argon2id
+  (`pinCode` est une colonne typée sur `User`, plus besoin de casts `as any`).
 - `services/notification.service.ts` — FCM (Firebase Admin SDK), désactivé proprement si
   `FIREBASE_SDK` absent.
+- `entities/user-device.entity.ts`, `entities/user-session.entity.ts` — entités DB.
 - `dto/auth.dto.ts` — DTOs des routes `/auth/*` (register, login, reset, PIN, Google...).
-- `dto/auth.type.dto.ts` — `JwtUserInfo` (payload JWT désérialisé) et `AuthApiRequest`
-  (extension `Request` Express). Restent ici, **pas** dans `shared/`, car seul `auth/`
-  (middleware, guards, controllers d'auth) et rien d'autre n'y touche directement — à
-  surveiller si `core/middleware` ou un autre module en dehors de `auth/` en a besoin un jour
-  (voir « Points d'attention »).
+- `dto/auth.type.dto.ts` — `JwtUserInfo`/`AuthApiRequest`, consommés (import de type
+  uniquement, aucune implication DI/module) par `core/middleware` et
+  `users/controllers/user.controller.ts`.
 
 ### Ce qui n'est PAS dans `auth/`
 
-- L'entité `User`, `UserDevice`, `UserSession` (dans `users/entities/`).
+- L'entité `User` (source de vérité unique : `users/entities/user.entity.ts`).
 - `UserService`, `UserController` (dans `users/`).
-- `SessionService`, `PasswordService`, `OtpService` (dans `users/services/`) — **décision du
-  projet** : ces trois services vivent dans `users/`, pas dans `auth/`, précisément pour éviter
-  le cycle `users → auth → users` (`UserService` en a besoin pour `softDeleteMe`,
-  `updateStatus`, `adminResetPassword`, `hardDelete`).
 
 ### Wiring du module (`auth.module.ts`)
 
 ```ts
 @Module({
   imports: [
-    UsersModule,
+    TypeOrmModule.forFeature([User, UserDevice, UserSession]), // import de la CLASSE User
+    MailModule,                                                 // (users/entities), pas du module
   ],
   controllers: [AuthController],
-  providers: [AuthService, NotificationService],
+  providers: [AuthService, NotificationService, OtpService, SessionService, PasswordService],
+  exports: [SessionService, PasswordService],
 })
 ```
 
-**Règle de dépendance : `auth → users` uniquement, jamais l'inverse.** `auth/` orchestre
-l'authentification contre l'agrégat `users/` ; `users/` ignore l'existence de `auth/`. Aucun
-cycle de modules, aucun `forwardRef()`. `UsersModule` exporte `TypeOrmModule` (pour que
-`AuthService` puisse injecter `Repository<User>` sans redéclarer son propre
-`TypeOrmModule.forFeature`), `UserService`, `SessionService`, `PasswordService`, `OtpService`.
+**Règle de dépendance : `users → auth`, jamais l'inverse.** `AuthModule` n'importe jamais
+`UsersModule` — il importe uniquement la **classe** `User` (type + décorateur d'entité) pour
+son propre `TypeOrmModule.forFeature`. `UsersModule` importe `AuthModule` pour que
+`UserService` consomme `SessionService`/`PasswordService` (`softDeleteMe`, `updateStatus`,
+`adminResetPassword`, `hardDelete`). Aucun cycle de modules, aucun `forwardRef()`.
 
 `AuthService.findOrCreateGoogleUser` (Google Firebase Auth) est une méthode **privée** de
 `AuthService`, avec son propre `Repository<User>` injecté — elle n'appelle pas `UserService`.
@@ -65,44 +66,48 @@ Le template « UNIFIED AUTH » avait `User` dupliqué : une copie complète dans
 (`entities/user.entity.ts`, `services/user.service.ts`, `controllers/user.controller.ts`,
 `dto/user.dto.ts`) **et** une copie dans `users/`. Deux classes `@Entity('users')`
 coexistaient → collision de métadonnées TypeORM à l'auto-chargement. `SessionService`/
-`OtpService`/`PasswordService` + `UserDevice`/`UserSession` étaient dans `auth/`. `UsersModule`
-était un `@Module({})` vide. Des références obsolètes (`UserRole.engineer/agent`,
-`ApiClientType.manager`, hérités du template générique avant l'adaptation aux rôles métier
-DiaspoVote) cassaient la compilation.
+`OtpService`/`PasswordService` + `UserDevice`/`UserSession` étaient déjà dans `auth/` à ce
+stade. `UsersModule` était un `@Module({})` vide. Des références obsolètes
+(`UserRole.engineer/agent`, `ApiClientType.manager`, hérités du template générique avant
+l'adaptation aux rôles métier DiaspoVote) cassaient la compilation.
 
-### 2. Deux tentatives de placement de Session/Otp/Password, résolues indépendamment en parallèle
+### 2. Étape intermédiaire — Session/Otp/Password déplacés vers `users/`
 
-Le doublon `User` a été nettoyé (suppression dans `auth/`, `users/` fait foi), et le
-placement de `SessionService`/`OtpService`/`PasswordService` + `UserDevice`/`UserSession` a
-fait l'objet d'**essais successifs dans deux fils de travail distincts** sur ce dépôt, avant
-de converger sur l'état actuel :
+Le doublon `User` a été nettoyé (suppression dans `auth/`, `users/` fait foi). Dans un premier
+temps, `SessionService`/`OtpService`/`PasswordService` + `UserDevice`/`UserSession` ont été
+déplacés dans `users/`, avec `AuthModule → UsersModule` (`auth → users`). `election/` et
+`oversight/` ont été construits par-dessus cette base — sans en dépendre directement, puisqu'ils
+ne référencent `users/` que par id (colonnes `userId`...), donc non affectés par le changement
+de direction qui suit.
 
-- Un essai a testé de tout regrouper dans `users/` puis, sur demande explicite, de tout
-  ramener dans `auth/` en inversant le sens de dépendance (`users → auth`, `AuthModule`
-  s'enregistrant lui-même dans `TypeOrmModule.forFeature([User, ...])` par import de classe).
-- En parallèle, un autre fil de travail (PR *"Refactor: Reorganize auth/users modules &
-  implement election domain"*) a tranché dans l'autre sens — **celui retenu et documenté
-  ci-dessus** : `SessionService`/`OtpService`/`PasswordService` + `UserDevice`/`UserSession`
-  dans `users/`, `AuthModule → UsersModule` (jamais l'inverse) — et a construit `election/`
-  et `oversight/` par-dessus cette base.
+### 3. Retour en arrière définitif — décision finale sur le placement
 
-**Décision finale : c'est cette seconde version (`auth → users`) qui fait foi.** Elle est déjà
-la fondation de `election/`/`oversight/` ; ne pas la ré-inverser. Si un besoin futur semble
-justifier de redéplacer ces services vers `auth/`, en discuter avant toute action — cela
-casserait la direction de dépendance sur laquelle tout le domaine métier repose désormais.
+**Décision explicite : `SessionService`/`OtpService`/`PasswordService` + `UserDevice`/
+`UserSession` reviennent dans `auth/`.** Pour éviter de recréer le cycle `auth ↔ users`
+(`UserService` a besoin de `SessionService`/`PasswordService`), la dépendance de module est
+**inversée** plutôt que résolue par `forwardRef()` :
+
+- `UsersModule` importe `AuthModule` (et non l'inverse).
+- `AuthModule` s'enregistre lui-même dans `TypeOrmModule.forFeature([User, UserDevice,
+  UserSession])` en import**ant** la classe `User` de `users/entities/` — un import de
+  type/décorateur, pas un import du module `UsersModule`.
+- `CLAUDE.md` mis à jour : la règle générale est **`users → auth`**, remplaçant la version
+  intermédiaire `auth → users` du point 2.
+
+**Cette version fait foi.** Ne pas la ré-inverser sans discussion explicite — le placement de
+ces services a déjà changé de sens deux fois.
 
 ## Points d'attention pour la suite
 
-- **Ne pas réintroduire de dépendance `users → auth`.** Si `auth/` a besoin d'une opération
-  déjà présente sur `UserService`, la consommer via `UsersModule` (déjà importé) plutôt que
-  de dupliquer — sauf cas comme `findOrCreateGoogleUser`, où la logique est simple et propre
-  à `auth/`, où une réécriture locale est préférable à l'ajout d'une méthode `UserService`
-  dédiée à un seul appelant.
-- `pinCode` est utilisé par `PasswordService` (`setupPin`/`checkPin`/`removePin`, dans
-  `users/services/`) via des casts `as any` — le champ n'existe pas sur `User` de base, il
-  est attendu sur une extension projet de l'entité. Ne pas « corriger » ces casts sans
-  ajouter la colonne, ou sans confirmer que le PIN n'est pas utilisé côté web pur.
+- **Ne pas réintroduire de dépendance `auth → users`.** Si `auth/` a besoin d'une opération
+  déjà présente sur `UserService`, ne pas importer `UsersModule` dans `AuthModule` — réécrire
+  la logique localement (comme `findOrCreateGoogleUser`) ou remonter le besoin commun dans
+  `shared/`/`utils/`.
+- `pinCode` est une colonne typée sur `User` (`string | null`) — les anciens casts `as any`
+  dans `PasswordService` ont disparu, ne pas les réintroduire.
+- `UserRole.user` a été renommé `UserRole.voter` (suit le diagramme de classe DiaspoVote) —
+  toute référence à `UserRole.user` dans du code ou de la doc plus ancienne est obsolète.
 - `mail/` et `utils/` ne doivent dépendre d'aucune entité métier (`User` inclus) — cf. règle
   générale dans `CLAUDE.md` (`MailRecipient`/`JwtPayloadUser` comme interfaces structurelles
   locales plutôt qu'un import direct de `User`). Si un changement dans `auth/` ajoute un appel
-  à `mail/`ou `utils/api-util.ts`, passer par ces interfaces plutôt que par le type `User`.
+  à `mail/` ou `utils/api-util.ts`, passer par ces interfaces plutôt que par le type `User`.

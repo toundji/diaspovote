@@ -9,7 +9,7 @@ import {
     ManyToOne, JoinColumn,
 } from 'typeorm';
 import { Audit } from '../../shared/audit';
-import { User } from './user.entity';
+import { User } from '../../users/entities/user.entity';
 import { UserDevice } from './user-device.entity';
 
 @Entity('user_sessions')

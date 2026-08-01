@@ -11,10 +11,10 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 
 import { User } from '../../users/entities/user.entity';
-import { SessionService } from '../../users/services/session.service';
-import { OtpService } from '../../users/services/otp.service';
+import { SessionService } from './session.service';
+import { OtpService } from './otp.service';
 import { NotificationService } from './notification.service';
-import { PasswordService } from '../../users/services/password.service';
+import { PasswordService } from './password.service';
 
 import {
     apiComparePasswords, apiGeneratePayLoad,

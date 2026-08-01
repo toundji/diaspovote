@@ -10,7 +10,7 @@ import { apiGenerateOtp } from '../../utils/api-util';
 import { redisConf, redisKeys } from '../../utils/redis.config';
 import { ApiError } from '../../utils/api-error';
 import { MailService } from '../../mail/mail.service';
-import { User } from '../entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class OtpService {

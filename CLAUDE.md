@@ -47,9 +47,9 @@ Découpage par responsabilité, avec une **règle de dépendance à sens unique*
 l'invariant le plus important du projet :
 
 ```
-shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
-                                            ↑
-                                       election/  ←  oversight/
+shared/  ←  database/  ←  core/  ←  mail/  ←  auth/  ←  users/
+                                                            ↑
+                                                       election/  ←  oversight/
 ```
 
 | Dossier      | Rôle                                                                 | Dépend de        |
@@ -58,8 +58,8 @@ shared/  ←  database/  ←  core/  ←  { users/, mail/ }  ←  auth/
 | `database/`  | Config ORM (`base_orm_config.ts`)                                    | shared           |
 | `core/`      | Infra Nest : guards, middleware, interceptors, filters, decorators   | shared, database |
 | `utils/`     | Helpers sans état : `api-util`, `api-error`, `api-fs`, `redis.config`, `swagger-config` | shared |
-| `users/`     | Agrégat utilisateur : `User`, `UserDevice`, `UserSession`, `UserService`, `SessionService`, `PasswordService`, `OtpService`, `UserController` | shared, core, utils, mail |
-| `auth/`      | **Flux** d'authentification : `AuthService`, `AuthController`, `NotificationService` (FCM) | users (+ ci-dessus) |
+| `auth/`      | **Flux** d'authentification + sécurité compte : `AuthService`, `AuthController`, `NotificationService` (FCM), `SessionService`, `PasswordService`, `OtpService`, entités `UserDevice`/`UserSession` | shared, core, utils, mail (+ l'entité `User` de `users/`, importée pour son propre `TypeOrmModule.forFeature`) |
+| `users/`     | Agrégat utilisateur : `User`, `UserService`, `UserController`        | shared, core, utils, auth (`SessionService`/`PasswordService`) |
 | `mail/`      | Mail asynchrone BullMQ + relance                                     | shared, utils    |
 | `election/`  | Processus électoral DiaspoVote : `Jurisdiction`, `Election`, `Condition`, `ElectoralRoll`, `Vote`, `Candidacy`, `CandidacyProgram`, `CampaignPost`. Référence `users/` par id simple (colonne, pas de relation TypeORM) — jamais d'import croisé d'entité. | shared, database, core, utils |
 | `oversight/` | Suivi post-élection DiaspoVote : `ActionCategory`, `Achievement`, `Contestation`, `Question`, `AuditLog`. Redevabilité des élus envers les électeurs — fonctionne en continu, pas seulement pendant la fenêtre électorale. Importe `ElectionsModule` pour sa **seule API publique** (`CandidacyService`, ex: vérifier le propriétaire d'une candidature) — aucune relation TypeORM/import d'entité vers `election/` ou `users/`, uniquement des colonnes id (`candidacyId`, `categoryId`, `achievementId`...). | shared, database, core, utils, **election/** |
@@ -73,11 +73,16 @@ Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 - **Rien n'importe depuis `auth/`** sauf via son API publique. Une primitive partagée
   (enum, classe de base) va dans `shared/` ; une chose DB dans `database/`. Si `core/` ou
   `mail/` tire un symbole de `auth/entities/`, c'est un bug d'architecture.
-- **`auth → users` uniquement, jamais l'inverse.** `auth/` orchestre l'authentification
-  contre l'agrégat `users/`. `users/` ignore l'existence de `auth/`. Aucun cycle de modules,
-  aucun `forwardRef()`. `PasswordService`/`SessionService`/`OtpService` vivent dans `users/`
-  (pas dans `auth/`) précisément pour éviter le cycle `users → auth → users`. Journal détaillé
-  des décisions sur ce module : `src/auth/auth.md`.
+- **`users → auth` uniquement, jamais l'inverse.** `auth/` porte `OtpService`/`SessionService`/
+  `PasswordService` (+ entités `UserDevice`/`UserSession`) et s'enregistre lui-même dans
+  `TypeOrmModule.forFeature([User, UserDevice, UserSession])` en import**ant l'entité** `User`
+  de `users/` (import de classe, pas du module — `AuthModule` n'importe jamais `UsersModule`).
+  `UsersModule` importe `AuthModule` pour exposer `SessionService`/`PasswordService` à
+  `UserService` (`softDeleteMe`, `updateStatus`, `adminResetPassword`, `hardDelete`).
+  `AuthService.findOrCreateGoogleUser` est une méthode privée avec son propre
+  `Repository<User>` (pas d'appel à `UserService`) — c'est la seule chose que `auth/`
+  aurait pu emprunter à `users/`. Aucun cycle de modules, aucun `forwardRef()`. Journal
+  détaillé des décisions sur ce module : `src/auth/auth.md`.
 - **`mail/` et `utils/` ne dépendent d'aucune entité métier.** Un service qui a juste besoin
   de `{ email, firstName }` type sur une interface structurelle locale (ex. `MailRecipient`
   dans `mail.types.ts`, `JwtPayloadUser` dans `api-util.ts`) plutôt que d'importer `User`.
@@ -86,7 +91,7 @@ Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
   couplage bidirectionnel entre modules métier et le socle auth/users, et entre modules métier
   eux-mêmes. `oversight/` → `election/` est autorisé **au niveau service** (`oversight/` importe
   `ElectionsModule` et injecte `CandidacyService` pour vérifier la propriété d'une candidature),
-  c'est le même principe que `auth/` → `users/` : dépendance à sens unique via l'API publique
+  c'est le même principe que `users/` → `auth/` : dépendance à sens unique via l'API publique
   exportée d'un module, jamais via une relation TypeORM ou un import d'entité.
 - **Un seul système de hash** : Argon2id via `PasswordService`. Ne jamais réintroduire de
   `bcrypt` / `hashSync` libre dans les utils.
@@ -182,12 +187,21 @@ FCM pour les notifs mobile. Si `FIREBASE_SDK` absent → service désactivé pro
 ## Migration users/auth — terminée
 
 L'extraction de `User` hors de `auth/` (section précédente de ce fichier) est **faite** :
-doublons supprimés, `UsersModule` câblé (`TypeOrmModule.forFeature([User, UserDevice,
-UserSession])`, exporte `TypeOrmModule` + `UserService`/`SessionService`/`PasswordService`/
-`OtpService`), `AuthModule` réduit à `AuthService`/`AuthController`/`NotificationService` et
-importe `UsersModule`. La décision du point 5 (ancien) a été tranchée : `SessionService`,
-`PasswordService`, `OtpService`, `UserDevice`, `UserSession` vivent dans `users/` —
-dépendance strictement `auth → users`, aucun `forwardRef()`.
+doublons supprimés, `User`/`UserService`/`UserController` vivent dans `users/`, qui exporte
+`UserService`.
+
+La décision du point 5 (ancien) a été tranchée **définitivement en faveur de `auth/`** :
+`SessionService`, `PasswordService`, `OtpService`, `UserDevice`, `UserSession` vivent dans
+`auth/` (pas dans `users/`). Une étape intermédiaire les avait placés dans `users/` avec
+`AuthModule → UsersModule` ; ce choix a été **inversé sur demande explicite** pour que ces
+services de sécurité de compte restent dans `auth/`. Pour éviter de recréer le cycle
+`auth ↔ users` (`UserService` a besoin de `SessionService`/`PasswordService` pour
+`softDeleteMe`/`updateStatus`/`adminResetPassword`/`hardDelete`), la dépendance de module est
+inversée plutôt que résolue par `forwardRef()` : `UsersModule` importe `AuthModule` (jamais
+l'inverse), et `AuthModule` s'enregistre lui-même dans `TypeOrmModule.forFeature([User,
+UserDevice, UserSession])` en import**ant** la classe `User` de `users/entities/` — un
+import de type/décorateur, pas un import du module `UsersModule`. Dépendance finale :
+`users → auth`, aucun `forwardRef()`. Détails dans `src/auth/auth.md`.
 
 `UserRole.user` a été renommé `UserRole.voter` pour suivre le diagramme de classe
 (`voter | candidate | admin | commission`) — migration TypeORM dédiée pour les données

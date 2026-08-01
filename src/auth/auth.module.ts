@@ -1,12 +1,20 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { MailModule } from 'src/mail/mail.module';
+import { User } from 'src/users/entities/user.entity';
 import { AuthController } from './controllers/auth.controller';
+import { UserDevice } from './entities/user-device.entity';
+import { UserSession } from './entities/user-session.entity';
 import { AuthService } from './services/auth.service';
 import { NotificationService } from './services/notification.service';
-import { UsersModule } from '../users/users.module';
+import { OtpService } from './services/otp.service';
+import { PasswordService } from './services/password.service';
+import { SessionService } from './services/session.service';
 
 @Module({
     imports: [
-        UsersModule,
+        TypeOrmModule.forFeature([User, UserDevice, UserSession]),
+        MailModule,
     ],
     controllers: [
         AuthController,
@@ -14,6 +22,13 @@ import { UsersModule } from '../users/users.module';
     providers: [
         AuthService,
         NotificationService,
+        OtpService,
+        SessionService,
+        PasswordService,
+    ],
+    exports: [
+        SessionService,
+        PasswordService,
     ],
 })
 export class AuthModule { }
