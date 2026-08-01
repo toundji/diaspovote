@@ -5,13 +5,14 @@
 // ============================================================
 
 import { Request } from 'express';
-import { TokenType } from '../../shared/common.enum';
+import { TokenType, UserStatus } from '../../shared/common.enum';
 
 // ── Payload JWT désérialisé (contenu de req.user) ─────────────
 
 export class JwtUserInfo {
     id!: string;
     email!: string;
+    status!: UserStatus;
     roles!: string[];
     type!: TokenType;
     jti!: string;
