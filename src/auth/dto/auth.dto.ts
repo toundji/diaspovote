@@ -5,6 +5,14 @@
 // Conventions :
 //   • class     → DTO d'entrée HTTP (validable par class-validator)
 //   • interface → type de retour ou contrat interne
+//
+// ⚠️ Piège class-validator : un décorateur comme @IsEmail()/@IsString()
+// seul est SILENCIEUSEMENT IGNORÉ quand la valeur est `undefined` (clé
+// absente du JSON) — ce n'est pas un no-op sur "optionnel", c'est un
+// bug latent : la valeur `undefined` traverse la validation et va
+// crasher plus loin (ex: TypeORM `where: { email: undefined }`).
+// Tout champ requis DOIT donc porter @IsNotEmpty() (ou @IsDefined())
+// en plus de son validateur de forme — jamais l'un sans l'autre.
 // ============================================================
 
 import {
@@ -17,9 +25,11 @@ import { User } from '../../users/entities/user.entity';
 // ── Inscription / Login ───────────────────────────────────────
 
 export class RegisterDto {
+    @IsNotEmpty({ message: "L'email est requis." })
     @IsEmail({}, { message: 'Email invalide.' })
     email!: string;
 
+    @IsNotEmpty({ message: 'Le mot de passe est requis.' })
     @IsString()
     @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' })
     password!: string;
@@ -36,11 +46,12 @@ export class RegisterDto {
 }
 
 export class LoginDto {
+    @IsNotEmpty({ message: "L'email est requis." })
     @IsEmail({}, { message: 'Email invalide.' })
     username!: string;  // email
 
     @IsString()
-    @IsNotEmpty()
+    @IsNotEmpty({ message: 'Le mot de passe est requis.' })
     password!: string;
 
     @IsString()
@@ -59,6 +70,7 @@ export class RefreshDto {
 // ── Confirmation email ────────────────────────────────────────
 
 export class ConfirmEmailDto {
+    @IsNotEmpty({ message: "L'OTP est requis." })
     @IsString()
     @Length(6, 6, { message: "L'OTP doit contenir exactement 6 chiffres." })
     otp!: string;
@@ -67,14 +79,17 @@ export class ConfirmEmailDto {
 // ── Reset password (flow OTP) ─────────────────────────────────
 
 export class SendResetOtpDto {
+    @IsNotEmpty({ message: "L'email est requis." })
     @IsEmail({}, { message: 'Email invalide.' })
     email!: string;
 }
 
 export class ConfirmResetOtpDto {
+    @IsNotEmpty({ message: "L'email est requis." })
     @IsEmail({}, { message: 'Email invalide.' })
     email!: string;
 
+    @IsNotEmpty({ message: "L'OTP est requis." })
     @IsString()
     @Length(6, 6, { message: "L'OTP doit contenir exactement 6 chiffres." })
     otp!: string;
@@ -85,6 +100,7 @@ export class ResetPasswordDto {
     @IsNotEmpty()
     tempToken!: string;
 
+    @IsNotEmpty({ message: 'Le mot de passe est requis.' })
     @IsString()
     @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' })
     newPassword!: string;
@@ -95,6 +111,7 @@ export class UpdatePasswordDto {
     @IsNotEmpty()
     oldPassword!: string;
 
+    @IsNotEmpty({ message: 'Le mot de passe est requis.' })
     @IsString()
     @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' })
     newPassword!: string;
@@ -103,6 +120,7 @@ export class UpdatePasswordDto {
 // ── Reset password (flow lien — Web uniquement) ───────────────
 
 export class SendResetLinkDto {
+    @IsNotEmpty({ message: "L'email est requis." })
     @IsEmail({}, { message: 'Email invalide.' })
     email!: string;
 }
@@ -112,6 +130,7 @@ export class ResetFromLinkDto {
     @IsNotEmpty()
     token!: string;     // token AES-GCM préfixé "rpt_"
 
+    @IsNotEmpty({ message: 'Le mot de passe est requis.' })
     @IsString()
     @MinLength(8, { message: 'Le mot de passe doit contenir au moins 8 caractères.' })
     newPassword!: string;
@@ -120,9 +139,11 @@ export class ResetFromLinkDto {
 // ── PIN (Mobile uniquement) ───────────────────────────────────
 
 export class LoginPinDto {
+    @IsNotEmpty({ message: 'userId est requis.' })
     @IsUUID('4', { message: 'userId invalide.' })
     userId!: string;
 
+    @IsNotEmpty({ message: 'Le PIN est requis.' })
     @Matches(/^\d{4,6}$/, { message: 'Le PIN doit contenir entre 4 et 6 chiffres.' })
     pinCode!: string;
 
@@ -132,15 +153,18 @@ export class LoginPinDto {
 }
 
 export class SetupPinDto {
+    @IsNotEmpty({ message: 'Le PIN est requis.' })
     @Matches(/^\d{4,6}$/, { message: 'Le PIN doit contenir entre 4 et 6 chiffres.' })
     pinCode!: string;
 }
 
 export class ResetPinDto {
+    @IsNotEmpty({ message: "L'OTP est requis." })
     @IsString()
     @Length(6, 6, { message: "L'OTP doit contenir exactement 6 chiffres." })
     otp!: string;
 
+    @IsNotEmpty({ message: 'Le nouveau PIN est requis.' })
     @Matches(/^\d{4,6}$/, { message: 'Le PIN doit contenir entre 4 et 6 chiffres.' })
     newPin!: string;
 }
