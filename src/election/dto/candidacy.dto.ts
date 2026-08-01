@@ -2,7 +2,7 @@
 // candidacy.dto.ts
 // DTOs des routes /candidacies/*.
 // ============================================================
-import { IsString, IsOptional, IsUUID, IsNotEmpty, IsUrl } from 'class-validator';
+import { IsOptional, IsUUID, IsNotEmpty, IsUrl } from 'class-validator';
 import { Candidacy } from '../entities/candidacy.entity';
 
 export class CreateCandidacyDto {
@@ -10,9 +10,10 @@ export class CreateCandidacyDto {
     @IsNotEmpty()
     electionId!: string;
 
-    @IsString()
+    /** FK positions.id — référentiel géré par l'admin (`/positions`). */
+    @IsUUID()
     @IsNotEmpty()
-    position!: string;
+    positionId!: string;
 
     @IsUrl({}, { message: "L'URL de la photo est invalide." })
     @IsOptional()
@@ -32,9 +33,9 @@ export class CreateCandidacyAdminDto extends CreateCandidacyDto {
 }
 
 export class UpdateCandidacyDto {
-    @IsString()
+    @IsUUID()
     @IsOptional()
-    position?: string;
+    positionId?: string;
 
     @IsUrl({}, { message: "L'URL de la photo est invalide." })
     @IsOptional()

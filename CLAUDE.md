@@ -229,6 +229,12 @@ décidé pour séparer ces deux préoccupations.
   (admin/commission, back-office) est un **ajout additif** pour créer une candidature au nom
   d'un tiers (candidat sans accès à l'appli, ou test) — délègue à la même validation que le
   flux self-service (`CandidacyService.submit(userId, dto)`), ne le remplace ni ne l'altère.
+  `Candidacy.position` (texte libre) a été remplacé par `Candidacy.positionId` (FK vers le
+  nouveau référentiel `Position` — `/positions`, même convention que `ActionCategory` :
+  `label`/`isActive`, lecture publique, écriture admin). Liste **globale**, partagée par
+  toutes les élections : pas d'association explicite élection↔poste — une élection « ignore »
+  un poste simplement en n'ayant aucune candidature dessus. `CandidacyService.submit()`/
+  `update()` valident que le poste existe et est actif.
 - ✅ `Condition` — CRUD par élection (`/elections/:electionId/conditions`), lecture publique,
   écriture admin.
 - ✅ `Vote` — `/votes` : cast (vérifie élection active + fenêtre startsAt/endsAt, inscription

@@ -128,11 +128,17 @@ classDiagram
     }
 
     %% ── 3. CANDIDATURE (domaine) ──────────────────────────────
+    class Position {
+        <<domaine>>
+        +string label
+        +bool isActive
+    }
+
     class Candidacy {
         <<domaine>>
         +string userId
         +string electionId
-        +string position
+        +string positionId
         +string photoUrl
         +string reviewedById
         +Date approvedAt
@@ -238,6 +244,7 @@ classDiagram
     %% Candidature
     User "1" --> "0..*" Candidacy : runs_as
     Election "1" --> "0..*" Candidacy : contested_in
+    Position "1" --> "0..*" Candidacy : classifies
     Candidacy "1" --> "0..1" CandidacyProgram : has
     Candidacy "1" --> "0..*" CampaignPost : publishes
 

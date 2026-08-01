@@ -25,9 +25,10 @@ export class Candidacy extends Audit {
     @Column({ name: 'election_id' })
     electionId!: string;
 
-    /** Intitulé du poste briguée (libre — dépend du scrutin). */
-    @Column()
-    position!: string;
+    /** Poste briguée (FK positions.id — référentiel géré par l'admin). */
+    @Index()
+    @Column({ name: 'position_id' })
+    positionId!: string;
 
     @Column({ name: 'photo_url', nullable: true })
     photoUrl?: string;
@@ -48,6 +49,5 @@ export class Candidacy extends Audit {
     @BeforeInsert()
     prepare() {
         this.code = Candidacy.entityCode + Date.now();
-        this.position = this.position?.trim();
     }
 }
