@@ -17,7 +17,13 @@ import { Public, NoKey, AllowStatus, GetUser, AuditInfo, } from '../../core/deco
 
 import { JwtUserInfo } from '../dto/auth.type.dto';
 import { UserStatus } from '../../shared/common.enum';
-import { LoginDto, RefreshDto, ConfirmEmailDto, SendResetOtpDto, ConfirmResetOtpDto, ResetPasswordDto, UpdatePasswordDto, SendResetLinkDto, ResetFromLinkDto, LoginPinDto, SetupPinDto, ResetPinDto, GoogleAuthDto, type RegisterDto } from '../dto/auth.dto';
+// ⚠️ RegisterDto DOIT être un import de valeur (pas `import type`) : NestJS
+// lit design:paramtypes pour déterminer le metatype de @Body() et décider
+// s'il doit valider. `import type` efface la classe du JS émis → le
+// paramètre retombe sur `Object` → ValidationPipe.toValidate() le juge non
+// validable et SAUTE la validation en silence (déjà vu et documenté sur
+// users/controllers/user.controller.ts — même piège, ici sur /auth/register).
+import { LoginDto, RefreshDto, ConfirmEmailDto, SendResetOtpDto, ConfirmResetOtpDto, ResetPasswordDto, UpdatePasswordDto, SendResetLinkDto, ResetFromLinkDto, LoginPinDto, SetupPinDto, ResetPinDto, GoogleAuthDto, RegisterDto } from '../dto/auth.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
