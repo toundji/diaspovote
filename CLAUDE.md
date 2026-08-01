@@ -57,7 +57,7 @@ shared/ ← database/ ← core/ ← mail/ ← auth/ ← users/ ← elections/ �
   `UserService` (`softDeleteMe`, `updateStatus`, `adminResetPassword`, `hardDelete`).
   `AuthService.findOrCreateGoogleUser` est réécrit localement (pas d'appel à `UserService`)
   pour qu'`auth/` ne dépende d'aucun provider de `users/`. Aucun cycle de modules, aucun
-  `forwardRef()`.
+  `forwardRef()`. Journal détaillé de ces changements : `src/auth/auth.md`.
 - **Sens unique côté métier aussi.** `candidates → elections`, jamais l'inverse : `elections/`
   n'importe **jamais** rien de `candidates/`. `Candidacy` référence `Election` (autorisé) ;
   l'inverse (`Vote` qui a besoin de valider une `Candidacy`) ne se fait **pas** dans
