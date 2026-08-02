@@ -60,6 +60,11 @@ const MOSCOW_UNIVERSITIES: string[] = [
     'Gerasimov Institute of Cinematography (VGIK)',
     'Surikov Moscow State Academic Art Institute',
     'Stroganov Moscow State University of Arts and Industry',
+    'Boris Shchukin Higher Theatre School (Vakhtangov Theatre Institute)',
+    'Shchepkin Higher Theatre School (Maly Theatre)',
+    'Moscow Art Theatre School (MKhAT School-Studio)',
+    'Moscow State Academy of Choreography',
+    'Russian Academy of Painting, Sculpture and Architecture (Glazunov Academy)',
     'Russian State Social University',
     'Moscow State Regional University',
     'Moscow State University of Psychology and Education (MSUPE)',
@@ -87,6 +92,12 @@ const MOSCOW_UNIVERSITIES: string[] = [
     'Diplomatic Academy of the Ministry of Foreign Affairs of the Russian Federation',
     'Russian Foreign Trade Academy',
     'Academy of Labour and Social Relations',
+    'Moscow University of Finance and Law (MFUA)',
+    'Griboyedov Institute of International Law and Economics',
+    'Russian State Specialized Academy of Arts',
+    'State University of Land Use Planning (GUZ)',
+    'New Economic School (NES)',
+    'Moscow School of Social and Economic Sciences (Shaninka)',
 ];
 
 export async function seedUniversities(dataSource: DataSource): Promise<void> {
