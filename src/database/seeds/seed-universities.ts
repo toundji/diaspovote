@@ -32,6 +32,7 @@ const MOSCOW_UNIVERSITIES: string[] = [
     'Moscow Institute of Physics and Technology (MIPT)',
     'National Research Nuclear University MEPhI',
     'National University of Science and Technology MISIS',
+    'Moscow State Technological University "STANKIN"',
     'Moscow Aviation Institute (MAI)',
     'National Research University "Moscow Power Engineering Institute" (MPEI)',
     'Moscow State University of Civil Engineering (MGSU)',
