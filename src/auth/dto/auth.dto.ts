@@ -46,6 +46,10 @@ export class RegisterDto {
     @IsOptional()
     lastName?: string;
 
+    @IsUUID()
+    @IsOptional()
+    universityId?: string;
+
     [key: string]: any;
 }
 

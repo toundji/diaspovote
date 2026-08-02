@@ -17,6 +17,7 @@ import { CandidacyProgram } from './entities/candidacy-program.entity';
 import { CandidacyPayment } from './entities/candidacy-payment.entity';
 import { CampaignPost } from './entities/campaign-post.entity';
 import { Position } from './entities/position.entity';
+import { University } from './entities/university.entity';
 
 import { ElectionController } from './controllers/election.controller';
 import { ElectoralRollController } from './controllers/electoral-roll.controller';
@@ -26,6 +27,7 @@ import { ConditionController } from './controllers/condition.controller';
 import { VoteController } from './controllers/vote.controller';
 import { PositionController } from './controllers/position.controller';
 import { CampaignPostController } from './controllers/campaign-post.controller';
+import { UniversityController } from './controllers/university.controller';
 
 import { ElectionService } from './services/election.service';
 import { ElectoralRollService } from './services/electoral-roll.service';
@@ -37,6 +39,7 @@ import { CampaignPostService } from './services/campaign-post.service';
 import { ConditionService } from './services/condition.service';
 import { VoteService } from './services/vote.service';
 import { PositionService } from './services/position.service';
+import { UniversityService } from './services/university.service';
 
 @Module({
     imports: [
@@ -51,6 +54,7 @@ import { PositionService } from './services/position.service';
             CandidacyPayment,
             CampaignPost,
             Position,
+            University,
         ]),
     ],
     controllers: [
@@ -62,6 +66,7 @@ import { PositionService } from './services/position.service';
         VoteController,
         PositionController,
         CampaignPostController,
+        UniversityController,
     ],
     providers: [
         ElectionService,
@@ -74,6 +79,7 @@ import { PositionService } from './services/position.service';
         ConditionService,
         VoteService,
         PositionService,
+        UniversityService,
     ],
     exports: [
         ElectionService,
@@ -86,6 +92,7 @@ import { PositionService } from './services/position.service';
         ConditionService,
         VoteService,
         PositionService,
+        UniversityService,
     ],
 })
 export class ElectionsModule { }

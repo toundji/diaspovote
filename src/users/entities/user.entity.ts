@@ -38,6 +38,14 @@ export class User extends Audit {
     @Column({ nullable: true, name: 'jurisdiction_id' })
     jurisdictionId?: string;
 
+    /**
+     * Université choisie à l'inscription (référentiel University de election/).
+     * Simple colonne d'id (pas de relation TypeORM), même principe que
+     * jurisdictionId : users/ ne dépend pas du module election/.
+     */
+    @Column({ nullable: true, name: 'university_id' })
+    universityId?: string;
+
     // ── Sécurité ─────────────────────────────────────────────
 
     /**

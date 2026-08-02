@@ -39,7 +39,11 @@ migrations déjà appliquées. Variables `.env` requises : `SEED_ADMIN_EMAIL`,
 pour rester compatible avec `apiComparePasswords` au login. `npm run seed` est
 idempotent (ignore si l'email existe
 déjà) ; `--refresh` fait un hard delete puis recrée (nécessaire pour libérer la
-contrainte unique sur l'email, un soft-delete ne suffirait pas).
+contrainte unique sur l'email, un soft-delete ne suffirait pas). `seed-universities.ts`
+seed les universités de Moscou (référentiel `University`, voir plus bas) — idempotent
+par nom, **sans** flag `--refresh` : contrairement à l'admin, une université peut déjà
+être référencée par des comptes utilisateurs (`User.universityId`), donc pas de
+suppression/recréation, uniquement l'ajout des entrées manquantes à chaque exécution.
 
 ## Architecture
 
@@ -259,6 +263,22 @@ décidé pour séparer ces deux préoccupations.
   (`GET /votes/receipt/:receiptCode`), résultats agrégés (`GET /votes/results/:electionId`,
   publics une fois `resultsPublished`, aperçu admin/commission avant). `ElectionService.activate()`
   exige désormais ≥ 2 candidatures approuvées et une liste électorale non vide.
+- ✅ `University` — `/universities`, même convention que `Position` : lecture publique
+  (choix à l'inscription), écriture (`create`/`update`/`remove`) réservée à `admin`. Champs
+  `name`/`city`/`jurisdictionId` (nullable — une université peut ne pas encore être
+  rattachée à un périmètre géographique). `jurisdictionId` reste une simple colonne (pas de
+  relation TypeORM/FK DB, même principe que `Candidacy.positionId`), mais contrairement aux
+  autres référentiels du module, `UniversityService` **hydrate** la réponse avec l'objet
+  `jurisdiction` complet (`null` si non rattachée ou si le périmètre référencé a été
+  supprimé) — décision explicite pour ce référentiel précis, pas un pattern à généraliser
+  ailleurs dans `election/`/`oversight/`. `User.universityId` (`users/`) référence ce
+  référentiel par id simple, exactement comme `User.jurisdictionId` — `users/` ne dépend
+  toujours pas de `election/`. Choisie à l'inscription via `RegisterDto.universityId`
+  (optionnel, `@IsUUID`) ; aucune validation d'existence côté `auth/register` (garderait
+  `auth/` indépendant de `election/`) — c'est le portail qui n'offre que des ids valides
+  puisqu'il peuple son select depuis `GET /universities`. Seed initial : les universités de
+  Moscou (voir `seed-universities.ts` plus haut), sans `jurisdictionId` (aucune juridiction
+  Moscou n'existe encore) — à rattacher plus tard via `PATCH /universities/:id`.
 
 ### `oversight/`
 
