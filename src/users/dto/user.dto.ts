@@ -109,3 +109,29 @@ export interface PaginatedUsers {
     limit: number;
     totalPages: number;
 }
+
+// ── Profil public minimal ───────────────────────────────────────
+
+export class PublicUsersQuery {
+    /** Identifiants séparés par des virgules (ex: "uuid1,uuid2"). Max 100. */
+    @IsString()
+    @IsNotEmpty()
+    ids!: string;
+}
+
+/**
+ * Sous-ensemble volontairement minimal — utilisé pour afficher un nom/une
+ * photo (ex: candidats sur une élection, auteur d'une publication de
+ * campagne) sans exposer email/téléphone/statut/rôles. `election/` et
+ * `oversight/` ne stockent que des userId (colonne, jamais de relation
+ * TypeORM) ; c'est au client (portail) de résoudre l'affichage via cette
+ * route, plutôt que de faire fuiter une dépendance vers `users/` dans ces
+ * modules métier.
+ */
+export interface PublicUser {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    name: string;
+    profile?: string;
+}

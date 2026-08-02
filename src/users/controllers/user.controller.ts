@@ -10,14 +10,15 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@ne
 
 import { UserService } from '../services/user.service';
 
-import { AllowStatus, GetUser, Roles, RequireClientType } from '../../core/decorators/api.decorator';
+import { AllowStatus, GetUser, Public, Roles, RequireClientType } from '../../core/decorators/api.decorator';
 
 // Import de valeur (pas `import type`) : ce sont des classes utilisées comme
 // metatype par le ValidationPipe (@Body() body: XxxDto) — un `import type` les
 // efface du JS émis, design:paramtypes perd la référence, et class-validator
 // ne valide plus rien silencieusement (bug réel constaté : email undefined
-// arrivait jusqu'au repository sur POST /users faute de validation).
-import { AdminCreateUserDto, AdminResetPasswordDto, AdminUpdateRolesDto, AdminUpdateStatusDto, UpdateProfileDto } from '../dto/user.dto';
+// arrivait jusqu'au repository sur POST /users faute de validation — et
+// revu sur /auth/register pour la même raison, voir CLAUDE.md du portail).
+import { AdminCreateUserDto, AdminResetPasswordDto, AdminUpdateRolesDto, AdminUpdateStatusDto, PublicUsersQuery, UpdateProfileDto } from '../dto/user.dto';
 // ListUsersQuery est une interface (aucune représentation runtime) : reste en import type.
 import type { ListUsersQuery } from '../dto/user.dto';
 import { ApiClientType, UserRole, UserStatus } from 'src/shared/common.enum';
@@ -109,6 +110,26 @@ export class UserController {
     @ApiQuery({ name: 'search', required: false, type: String, description: 'Recherche sur email / firstName / lastName' })
     listUsers(@Query() query: ListUsersQuery) {
         return this.userService.listUsers(query);
+    }
+
+    // ── Profil public minimal (portail vitrine) ───────────────
+
+    /**
+     * GET /users/public?ids=uuid1,uuid2
+     * Résout un lot d'ids en {id, firstName, lastName, name, profile} —
+     * rien de sensible (pas d'email/téléphone/statut/rôles). Utilisé par le
+     * portail pour afficher les candidats/auteurs (election/oversight ne
+     * stockent que des userId, jamais de relation vers users/).
+     *
+     * ⚠️ Doit être déclarée AVANT :id pour éviter que NestJS interprète
+     * "public" comme un id (même piège que admin/reset-password ci-dessous).
+     */
+    @Get('public')
+    @Public()
+    @ApiOperation({ summary: 'Profils publics minimaux pour un lot d\'ids (nom, photo)' })
+    @ApiQuery({ name: 'ids', required: true, type: String, description: 'Identifiants séparés par des virgules' })
+    getPublicProfiles(@Query() query: PublicUsersQuery) {
+        return this.userService.getPublicProfiles(query.ids);
     }
 
     // ── Admin — lecture unitaire ──────────────────────────────

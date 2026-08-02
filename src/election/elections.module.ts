@@ -24,6 +24,7 @@ import { CandidacyController } from './controllers/candidacy.controller';
 import { ConditionController } from './controllers/condition.controller';
 import { VoteController } from './controllers/vote.controller';
 import { PositionController } from './controllers/position.controller';
+import { CampaignPostController } from './controllers/campaign-post.controller';
 
 import { ElectionService } from './services/election.service';
 import { ElectoralRollService } from './services/electoral-roll.service';
@@ -57,6 +58,7 @@ import { PositionService } from './services/position.service';
         ConditionController,
         VoteController,
         PositionController,
+        CampaignPostController,
     ],
     providers: [
         ElectionService,

@@ -5,11 +5,11 @@
 // ============================================================
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindManyOptions, ILike, FindOptionsWhere, IsNull, Not } from 'typeorm';
+import { Repository, FindManyOptions, ILike, FindOptionsWhere, IsNull, Not, In } from 'typeorm';
 
 import { User } from '../entities/user.entity';
 import { ApiError, ApiErrorDb, ApiErrorNotFoundById } from '../../utils/api-error';
-import { AdminCreateUserDto, UpdateProfileDto, ListUsersQuery, PaginatedUsers } from '../dto/user.dto';
+import { AdminCreateUserDto, UpdateProfileDto, ListUsersQuery, PaginatedUsers, PublicUser } from '../dto/user.dto';
 import { PasswordService } from '../../auth/services/password.service';
 import { SessionService } from '../../auth/services/session.service';
 import { UserStatus, UserRole, FileStatus } from 'src/shared/common.enum';
@@ -57,6 +57,32 @@ export class UserService {
         }
         await this.userRepo.update(userId, patch);
         return this.getProfile(userId);
+    }
+
+    /**
+     * Profils publics minimaux (nom + photo) pour une liste d'ids — utilisé
+     * par le portail pour afficher les candidats/auteurs sans que
+     * election/oversight n'aient besoin d'importer l'entité User. Rejette
+     * silencieusement les ids introuvables plutôt que d'échouer sur tout
+     * le lot (un candidat supprimé ne doit pas casser l'affichage des
+     * autres).
+     */
+    async getPublicProfiles(rawIds: string): Promise<PublicUser[]> {
+        const ids = [...new Set(rawIds.split(',').map(id => id.trim()).filter(Boolean))].slice(0, 100);
+        if (ids.length === 0) return [];
+
+        const users = await this.userRepo.find({
+            where: { id: In(ids) },
+            select: { id: true, firstName: true, lastName: true, profile: true },
+        });
+
+        return users.map(u => ({
+            id: u.id,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            name: [u.firstName, u.lastName].filter(Boolean).join(' ') || 'Utilisateur',
+            profile: u.profile,
+        }));
     }
 
     async softDeleteMe(userId: string): Promise<{ success: boolean }> {
