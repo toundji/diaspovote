@@ -47,3 +47,12 @@ export interface PaginatedCampaignPosts {
     limit: number;
     totalPages: number;
 }
+
+// ── Liste globale (fil d'actualités, toutes candidatures confondues) ─
+
+export interface ListAllCampaignPostsQuery {
+    page?: number;
+    limit?: number;
+    /** Filtre optionnel sur une élection donnée. */
+    electionId?: string;
+}

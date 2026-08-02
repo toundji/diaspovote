@@ -12,7 +12,7 @@ import { Candidacy } from '../entities/candidacy.entity';
 
 import { ApiError, ApiErrorNotFoundById } from 'src/utils/api-error';
 import {
-    CreateCampaignPostDto, ListCampaignPostsQuery,
+    CreateCampaignPostDto, ListAllCampaignPostsQuery, ListCampaignPostsQuery,
     PaginatedCampaignPosts, UpdateCampaignPostDto,
 } from '../dto/campaign-post.dto';
 
@@ -65,6 +65,35 @@ export class CampaignPostService {
             order: { publishedAt: 'DESC', createdAt: 'DESC' },
         });
 
+        return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+    }
+
+    /**
+     * Fil d'actualités global — publications publiées, toutes candidatures
+     * confondues, restreint aux candidatures approuvées (une candidature en
+     * attente ou rejetée n'a pas de visibilité publique, même si son
+     * titulaire a publié un post). Filtrable par élection.
+     */
+    async listAll(query: ListAllCampaignPostsQuery): Promise<PaginatedCampaignPosts> {
+        const page = Math.max(1, query.page ?? 1);
+        const limit = Math.min(100, Math.max(1, query.limit ?? 20));
+        const skip = (page - 1) * limit;
+
+        let qb = this.postRepo
+            .createQueryBuilder('post')
+            .innerJoin(Candidacy, 'candidacy', 'candidacy.id = post.candidacyId')
+            .where('post.publishedAt IS NOT NULL')
+            .andWhere('candidacy.approvedAt IS NOT NULL')
+            .andWhere('candidacy.rejectedAt IS NULL')
+            .orderBy('post.publishedAt', 'DESC')
+            .skip(skip)
+            .take(limit);
+
+        if (query.electionId) {
+            qb = qb.andWhere('candidacy.electionId = :electionId', { electionId: query.electionId });
+        }
+
+        const [data, total] = await qb.getManyAndCount();
         return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
