@@ -20,6 +20,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ElectionsModule } from './election/elections.module';
 import { OversightModule } from './oversight/oversight.module';
+import { SponsorsModule } from './sponsors/sponsors.module';
 import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
 
 
@@ -103,6 +104,7 @@ import { FileSystemStoredFile, NestjsFormDataModule } from 'nestjs-form-data';
     UsersModule,
     ElectionsModule,
     OversightModule,
+    SponsorsModule,
   ],
   controllers: [AppController],
   providers: [AppService,
