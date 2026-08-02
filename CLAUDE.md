@@ -234,7 +234,22 @@ décidé pour séparer ces deux préoccupations.
   `label`/`isActive`, lecture publique, écriture admin). Liste **globale**, partagée par
   toutes les élections : pas d'association explicite élection↔poste — une élection « ignore »
   un poste simplement en n'ayant aucune candidature dessus. `CandidacyService.submit()`/
-  `update()` valident que le poste existe et est actif.
+  `update()` valident que le poste existe et est actif. `Position.feeAmount`/`feeCurrency`
+  (frais de candidature, décimal + code ISO 4217) sont nullables **ensemble** — `null` = poste
+  gratuit, validation croisée dans `Create`/`UpdatePositionDto` (`ValidateIf`, l'un exige
+  l'autre) plutôt qu'en base.
+- ✅ `CandidacyPayment` — preuve de paiement des frais, 1-1 avec `Candidacy` (upsert, même
+  convention que `CandidacyProgram`), inexistante pour un poste gratuit. `amount`/`currency`
+  figent le tarif du poste au moment de la 1re soumission (protège d'un changement de tarif
+  ultérieur). Upload `multipart/form-data` (`POST /candidacies/:id/payment`, `DocDto` —
+  pdf/png/jpg — réutilisant `ApiFsUtils`, même pattern que `users/profile/image`) ; resoumission
+  libre tant que non approuvée (un nouvel upload réinitialise `rejectedAt`/`reviewedById`).
+  Revue (`approve`/`reject`) réservée à `commission`/`admin` depuis le back-office, **totalement
+  indépendante** de la revue de `Candidacy` elle-même — décision explicite : l'admin peut
+  approuver une candidature sans attendre la validation du paiement, et inversement, aucun
+  contrôle croisé entre les deux. Lecture (`GET /candidacies/:id/payment`) restreinte au
+  propriétaire de la candidature + `commission`/`admin` — jamais publique, contrairement à
+  `photoUrl`/au programme (un reçu de paiement n'a rien à faire sur le portail vitrine).
 - ✅ `Condition` — CRUD par élection (`/elections/:electionId/conditions`), lecture publique,
   écriture admin.
 - ✅ `Vote` — `/votes` : cast (vérifie élection active + fenêtre startsAt/endsAt, inscription

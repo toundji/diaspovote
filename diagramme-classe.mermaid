@@ -132,6 +132,8 @@ classDiagram
         <<domaine>>
         +string label
         +bool isActive
+        +decimal feeAmount
+        +string feeCurrency
     }
 
     class Candidacy {
@@ -149,6 +151,17 @@ classDiagram
         <<domaine>>
         +string candidacyId
         +string content
+    }
+
+    class CandidacyPayment {
+        <<domaine>>
+        +string candidacyId
+        +decimal amount
+        +string currency
+        +string proofUrl
+        +string reviewedById
+        +Date approvedAt
+        +Date rejectedAt
     }
 
     class CampaignPost {
@@ -246,6 +259,7 @@ classDiagram
     Election "1" --> "0..*" Candidacy : contested_in
     Position "1" --> "0..*" Candidacy : classifies
     Candidacy "1" --> "0..1" CandidacyProgram : has
+    Candidacy "1" --> "0..1" CandidacyPayment : pays_fee_via
     Candidacy "1" --> "0..*" CampaignPost : publishes
 
     %% Vote
@@ -270,3 +284,5 @@ classDiagram
     note for Vote "UNIQUE(userId, electionId). createdAt (Audit) = date du vote."
     note for ElectoralRoll "UNIQUE(userId, electionId) - eligibilite par annee."
     note for Election "UNIQUE(year, jurisdictionId) - une election par perimetre et par annee.\ntaux = votes(election) / roll(election)."
+    note for Position "feeAmount/feeCurrency nullable ensemble : null = poste gratuit,\naucun CandidacyPayment exige pour ce poste."
+    note for CandidacyPayment "UNIQUE(candidacyId) - upsert, resoumission libre tant que non approuve.\namount/currency = snapshot du tarif du poste a la 1re soumission.\nRevue independante de celle de Candidacy (pas de blocage croise)."

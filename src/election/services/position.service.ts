@@ -17,7 +17,11 @@ export class PositionService {
     ) { }
 
     async create(dto: CreatePositionDto): Promise<Position> {
-        const position = this.positionRepo.create({ label: dto.label });
+        const position = this.positionRepo.create({
+            label: dto.label,
+            feeAmount: dto.feeAmount !== undefined ? dto.feeAmount.toFixed(2) : null,
+            feeCurrency: dto.feeCurrency !== undefined ? dto.feeCurrency.toUpperCase() : null,
+        });
         return this.positionRepo.save(position);
     }
 
@@ -40,6 +44,15 @@ export class PositionService {
             label: dto.label ?? position.label,
             isActive: dto.isActive ?? position.isActive,
         });
+
+        if (dto.feeAmount !== undefined) {
+            position.feeAmount = dto.feeAmount.toFixed(2);
+            position.feeCurrency = dto.feeCurrency!.toUpperCase();
+        } else if (dto.clearFee) {
+            position.feeAmount = null;
+            position.feeCurrency = null;
+        }
+
         return this.positionRepo.save(position);
     }
 
