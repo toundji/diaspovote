@@ -14,6 +14,7 @@ import { Condition } from './entities/condition.entity';
 import { Election } from './entities/election.entity';
 import { Candidacy } from './entities/candidacy.entity';
 import { CandidacyProgram } from './entities/candidacy-program.entity';
+import { CandidacyPayment } from './entities/candidacy-payment.entity';
 import { CampaignPost } from './entities/campaign-post.entity';
 import { Position } from './entities/position.entity';
 
@@ -31,6 +32,7 @@ import { ElectoralRollService } from './services/electoral-roll.service';
 import { JurisdictionService } from './services/jurisdiction.service';
 import { CandidacyService } from './services/candidacy.service';
 import { CandidacyProgramService } from './services/candidacy-program.service';
+import { CandidacyPaymentService } from './services/candidacy-payment.service';
 import { CampaignPostService } from './services/campaign-post.service';
 import { ConditionService } from './services/condition.service';
 import { VoteService } from './services/vote.service';
@@ -46,6 +48,7 @@ import { PositionService } from './services/position.service';
             Vote,
             Candidacy,
             CandidacyProgram,
+            CandidacyPayment,
             CampaignPost,
             Position,
         ]),
@@ -66,6 +69,7 @@ import { PositionService } from './services/position.service';
         ElectoralRollService,
         CandidacyService,
         CandidacyProgramService,
+        CandidacyPaymentService,
         CampaignPostService,
         ConditionService,
         VoteService,
@@ -77,6 +81,7 @@ import { PositionService } from './services/position.service';
         ElectoralRollService,
         CandidacyService,
         CandidacyProgramService,
+        CandidacyPaymentService,
         CampaignPostService,
         ConditionService,
         VoteService,

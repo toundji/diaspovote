@@ -9,15 +9,18 @@ import {
     Body, Controller, Delete, Get, HttpCode, HttpStatus,
     Param, Patch, Post, Put, Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes } from '@nestjs/swagger';
+import { FormDataRequest } from 'nestjs-form-data';
 
 import { CandidacyService } from '../services/candidacy.service';
 import { CandidacyProgramService } from '../services/candidacy-program.service';
 import { CampaignPostService } from '../services/campaign-post.service';
+import { CandidacyPaymentService } from '../services/candidacy-payment.service';
 
 import { GetUser, Public, Roles, RequireClientType } from 'src/core/decorators/api.decorator';
 import { ApiClientType, UserRole } from 'src/shared/common.enum';
 import { JwtUserInfo } from 'src/auth/dto/auth.type.dto';
+import { DocDto } from 'src/shared/media.dto';
 
 import { CreateCandidacyAdminDto, CreateCandidacyDto, UpdateCandidacyDto } from '../dto/candidacy.dto';
 import type { ListCandidaciesQuery } from '../dto/candidacy.dto';
@@ -32,6 +35,7 @@ export class CandidacyController {
         private readonly candidacyService: CandidacyService,
         private readonly programService: CandidacyProgramService,
         private readonly postService: CampaignPostService,
+        private readonly paymentService: CandidacyPaymentService,
     ) { }
 
     // ── Candidat ───────────────────────────────────────────────
@@ -129,6 +133,45 @@ export class CandidacyController {
     @ApiOperation({ summary: 'Créer ou mettre à jour son programme' })
     upsertProgram(@GetUser() user: JwtUserInfo, @Param('id') id: string, @Body() body: UpsertCandidacyProgramDto) {
         return this.programService.upsert(id, user.id, body);
+    }
+
+    // ── Paiement des frais de candidature (1-1) ────────────────
+    // Indépendant de la revue de la candidature ci-dessus : l'admin peut
+    // approuver/rejeter la candidature sans attendre la validation du
+    // paiement, et inversement. Inexistant pour un poste gratuit.
+
+    @Get(':id/payment')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Consulter le paiement des frais (propriétaire ou commission/admin uniquement)' })
+    getPayment(@GetUser() user: JwtUserInfo, @Param('id') id: string) {
+        return this.paymentService.getForViewer(id, user);
+    }
+
+    @Post(':id/payment')
+    @FormDataRequest()
+    @ApiConsumes('multipart/form-data')
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Soumettre (ou resoumettre après rejet) la preuve de paiement des frais' })
+    submitPayment(@GetUser() user: JwtUserInfo, @Param('id') id: string, @Body() body: DocDto) {
+        return this.paymentService.submit(id, user.id, body);
+    }
+
+    @Post(':id/payment/approve')
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin, UserRole.commission)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: '[Commission] Valider le paiement des frais de candidature' })
+    approvePayment(@GetUser() user: JwtUserInfo, @Param('id') id: string) {
+        return this.paymentService.approve(id, user.id);
+    }
+
+    @Post(':id/payment/reject')
+    @RequireClientType(ApiClientType.back_office)
+    @Roles(UserRole.admin, UserRole.commission)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: '[Commission] Rejeter le paiement des frais de candidature' })
+    rejectPayment(@GetUser() user: JwtUserInfo, @Param('id') id: string) {
+        return this.paymentService.reject(id, user.id);
     }
 
     // ── Publications de campagne (1-N) ─────────────────────────
