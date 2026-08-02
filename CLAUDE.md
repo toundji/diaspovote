@@ -48,8 +48,8 @@ l'invariant le plus important du projet :
 
 ```
 shared/  ←  database/  ←  core/  ←  mail/  ←  auth/  ←  users/
-                                                            ↑
-                                                       election/  ←  oversight/
+                              ↑                            ↑
+                        sponsors/                     election/  ←  oversight/
 ```
 
 | Dossier      | Rôle                                                                 | Dépend de        |
@@ -63,6 +63,7 @@ shared/  ←  database/  ←  core/  ←  mail/  ←  auth/  ←  users/
 | `mail/`      | Mail asynchrone BullMQ + relance                                     | shared, utils    |
 | `election/`  | Processus électoral DiaspoVote : `Jurisdiction`, `Election`, `Condition`, `ElectoralRoll`, `Vote`, `Candidacy`, `CandidacyProgram`, `CampaignPost`. Référence `users/` par id simple (colonne, pas de relation TypeORM) — jamais d'import croisé d'entité. | shared, database, core, utils |
 | `oversight/` | Suivi post-élection DiaspoVote : `ActionCategory`, `Achievement`, `Contestation`, `Question`, `AuditLog`. Redevabilité des élus envers les électeurs — fonctionne en continu, pas seulement pendant la fenêtre électorale. Importe `ElectionsModule` pour sa **seule API publique** (`CandidacyService`, ex: vérifier le propriétaire d'une candidature) — aucune relation TypeORM/import d'entité vers `election/` ou `users/`, uniquement des colonnes id (`candidacyId`, `categoryId`, `achievementId`...). | shared, database, core, utils, **election/** |
+| `sponsors/`  | Financement du portail (hébergement, frais de fonctionnement) : `Sponsor`. Module autonome, aucune dépendance à `auth/`/`users/`/`election/`/`oversight/` — soumission publique sans compte, `reviewedById` est une colonne id simple (pas de relation), même principe que `election/`. | shared, database, core, utils |
 
 Contenu de `shared/` : `audit.ts` (entité de base), `common.enum.ts`
 (`UserRole`, `UserStatus`, `ApiClientType`, `TokenType`, `DeviceType`, `AbilityEnum`,
@@ -278,3 +279,22 @@ décidé pour séparer ces deux préoccupations.
   `Contestation`/`Question` après une action de modération). Lecture (`GET /audit-log`) réservée
   à commission/admin depuis le back-office — entité métier distincte de l'audit technique
   `createdBy`/`updatedBy` (`core/interceptors/api-audit.ts`), à ne pas confondre.
+
+### `sponsors/`
+
+- ✅ `Sponsor` — financement du portail (hébergement, frais de fonctionnement). Deux voies de
+  soumission : formulaire public `POST /sponsors` (sans compte — `name`/`email`/`phone`/`message`
+  uniquement, jamais `amount`/`logoUrl`, l'argent transite hors plateforme) et `POST
+  /sponsors/admin` (admin/commission, back-office, ajout additif comme `POST /candidacies/admin`)
+  qui **auto-approuve** — pas de second regard nécessaire sur son propre enregistrement, contra
+  la soumission publique qui reste en attente jusqu'à revue explicite (`approve`/`reject`, état
+  dérivé `approvedAt`/`rejectedAt` même convention que `Candidacy`). `amount`/`currency` (frais
+  confirmés) et `logoUrl` sont renseignés uniquement par l'admin après validation (`PATCH
+  /sponsors/:id`, `POST /sponsors/:id/logo` — multipart, même pattern `ApiFsUtils` que
+  `users/profile/image`). `isActive` est indépendant de l'approbation : permet de masquer un
+  sponsor de l'accueil (partenariat terminé) sans perdre l'historique. Lecture publique (`GET
+  /sponsors`, accueil du portail) restreinte à une projection minimale (`id`/`name`/`logoUrl`/
+  `websiteUrl`, via `select` TypeORM — même mécanisme que `UserService.getPublicProfiles`) sur
+  les sponsors approuvés + actifs uniquement — jamais `email`/`phone`/`message` (coordonnées du
+  sponsor). Liste complète (`GET /sponsors/admin`, paginée + filtre `status`) et détail (`GET
+  /sponsors/:id`) réservés à commission/admin depuis le back-office.

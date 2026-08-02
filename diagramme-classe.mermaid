@@ -231,6 +231,23 @@ classDiagram
         +string details
     }
 
+    %% ── 7. FINANCEMENT (domaine, autonome) ────────────────────
+    class Sponsor {
+        <<domaine>>
+        +string name
+        +string email
+        +string phone
+        +string message
+        +decimal amount
+        +string currency
+        +string logoUrl
+        +string websiteUrl
+        +bool isActive
+        +string reviewedById
+        +Date approvedAt
+        +Date rejectedAt
+    }
+
     %% ============================================================
     %%  RELATIONS  (groupées par cluster, dans l'ordre ci-dessus)
     %% ============================================================
@@ -286,3 +303,4 @@ classDiagram
     note for Election "UNIQUE(year, jurisdictionId) - une election par perimetre et par annee.\ntaux = votes(election) / roll(election)."
     note for Position "feeAmount/feeCurrency nullable ensemble : null = poste gratuit,\naucun CandidacyPayment exige pour ce poste."
     note for CandidacyPayment "UNIQUE(candidacyId) - upsert, resoumission libre tant que non approuve.\namount/currency = snapshot du tarif du poste a la 1re soumission.\nRevue independante de celle de Candidacy (pas de blocage croise)."
+    note for Sponsor "Module autonome, aucune relation TypeORM : soumission publique sans compte\n(formulaire) ou creation admin (auto-approuvee). isActive controle la\nvisibilite sur l'accueil, independant de l'approbation de la demande."
